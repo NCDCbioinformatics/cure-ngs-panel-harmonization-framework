@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this framework or repository metadata, please cite the manuscript and this repository."
+title: "CURE-NGS Panel Harmonization Framework"
+type: software
+version: "0.1.0"
+license: MIT
+authors:
+  - family-names: Ahn
+    given-names: Jaewoo
+  - family-names: Park
+    given-names: Phillip
+  - family-names: Choi
+    given-names: Yeonho
+  - family-names: Choi
+    given-names: Kui Son
+  - family-names: Kong
+    given-names: Sun-Young
+  - family-names: Park
+    given-names: Seog-Yun
+  - family-names: Shim
+    given-names: Hyoeun
+  - family-names: Lee
+    given-names: Sangmi
+  - family-names: Yun
+    given-names: Jeonghee
+  - family-names: Kim
+    given-names: Seonjae
+  - family-names: Oh
+    given-names: Na Yeon
+  - family-names: Han
+    given-names: Jaihong
+  - family-names: Lee
+    given-names: Keun Seok
+repository-code: "https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework"
+abstract: "Umbrella repository for the CURE-NGS panel harmonization framework and its component bioinformatics pipelines."
