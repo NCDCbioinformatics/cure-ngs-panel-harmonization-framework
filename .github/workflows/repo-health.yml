@@ -1,0 +1,43 @@
+name: Repository Health
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify core repository metadata
+        shell: bash
+        run: |
+          test -f README.md
+          test -f LICENSE
+          test -f NOTICE.md
+          test -f CITATION.cff
+          test -f docs/MANUSCRIPT_DECLARATIONS.md
+          test -f docs/SOFTWARE_INVENTORY.md
+          test -f data/README.md
+
+      - name: Verify required text markers
+        shell: bash
+        run: |
+          grep -q "cure-ngs-panel-harmonization-framework" README.md
+          grep -q "MIT License" LICENSE
+          grep -q "repository-code" CITATION.cff
+          grep -q "Data Availability declaration" docs/MANUSCRIPT_DECLARATIONS.md
+          grep -q "Competing Interest declaration" docs/MANUSCRIPT_DECLARATIONS.md
