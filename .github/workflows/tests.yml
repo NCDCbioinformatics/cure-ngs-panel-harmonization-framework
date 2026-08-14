@@ -1,0 +1,95 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install exact test dependencies
+        run: |
+          python -m pip install --require-hashes --requirement requirements-runtime.txt
+          python -m pip install --requirement requirements-test.txt
+      - name: Install package without resolving dependencies
+        run: python -m pip install --no-deps --editable .
+      - name: Run unit tests and enforce coverage floor
+        run: >-
+          python -m pytest
+          --cov=cure_ngs
+          --cov-report=term-missing
+          --cov-fail-under=70
+
+  container:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build digest- and version-pinned core image
+        run: docker build --file docker/Dockerfile.core --tag cure-ngs:test .
+      - name: Prepare output directory for non-root UID 10001
+        run: mkdir ci-output && chmod 0777 ci-output
+      - name: Exercise CSV regression under hardened container settings
+        run: |
+          docker run --rm --read-only --tmpfs /tmp:size=64m \
+            --security-opt no-new-privileges:true \
+            --volume "$PWD/tests/fixtures/synthetic:/data/input:ro" \
+            --volume "$PWD/ci-output:/data/output" \
+            cure-ngs:test \
+            normalize-hgvs-table \
+            /data/input/hgvs_input.csv /data/output/hgvs_output.csv \
+            --delimiter comma
+          grep --fixed-strings 'institution-A_sample-000000123' ci-output/hgvs_output.csv
+          test -s ci-output/hgvs_output.csv.manifest.json
+      - name: Exercise left-alignment and multiallelic splitting
+        run: |
+          docker run --rm --read-only --tmpfs /tmp:size=64m \
+            --security-opt no-new-privileges:true \
+            --volume "$PWD/tests/fixtures/synthetic:/data/input:ro" \
+            --volume "$PWD/ci-output:/data/output" \
+            cure-ngs:test \
+            normalize-vcf \
+            /data/input/normalize.grch38.vcf /data/output/normalized.vcf \
+            --reference-fasta /data/input/tiny.grch38.fa --assembly GRCh38
+          test "$(grep -vc '^#' ci-output/normalized.vcf)" -eq 4
+          test -s ci-output/normalized.vcf.manifest.json
+      - name: Exercise canonical cross-route concordance
+        run: |
+          docker run --rm --read-only --tmpfs /tmp:size=64m \
+            --security-opt no-new-privileges:true \
+            --volume "$PWD/tests/fixtures/synthetic:/data/input:ro" \
+            --volume "$PWD/ci-output:/data/output" \
+            cure-ngs:test \
+            compare-maf-routes /data/output/concordance \
+            --reference-maf /data/input/concordance_direct.grch38.maf \
+            --query-maf /data/input/concordance_report.grch38.maf \
+            --reference-require-any HGVSc \
+            --reference-fasta /data/input/tiny.grch38.fa
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          summary = json.loads(
+              Path("ci-output/concordance/concordance_summary.json").read_text()
+          )
+          assert summary["overall"]["concordant"] == 3
+          assert summary["overall"]["exact_set_agreement_percent"] == 100.0
+          assert summary["canonicalization"]["reference"][
+              "multiallelic_source_rows_split"
+          ] == 1
+          assert summary["canonicalization"]["reference"][
+              "allele_records_before_normalization"
+          ] == 3
+          PY

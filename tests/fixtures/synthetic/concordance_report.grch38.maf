@@ -1,0 +1,4 @@
+Tumor_Sample_Barcode	Chromosome	Start_Position	End_Position	Reference_Allele	Tumor_Seq_Allele2	Reference_Assembly
+institution-A_sample-000000123	chr1	6	5	-	A	GRCh38
+institution-B_sample-000000456	chr1	10	10	C	T	GRCh38
+institution-B_sample-000000456	chr1	10	10	C	G	GRCh38

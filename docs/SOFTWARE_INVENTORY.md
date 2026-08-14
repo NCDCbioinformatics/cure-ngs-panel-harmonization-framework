@@ -1,37 +1,50 @@
 # Software Inventory
 
-This document summarizes the software metadata that journal editors commonly request for bioinformatics methods papers.
+## Supported revision release
 
-## Summary
-
-- Project name: CURE-NGS panel harmonization framework
+- Project: CURE-NGS Harmonizer
+- Package: `cure-ngs-harmonizer` 0.1.0
+- Command: `cure-ngs`
 - Maintainer account: `NCDCbioinformatics`
-- Primary operating system target: Linux
-- Secondary execution path: Windows via WSL
-- Primary languages: Bash shell, Python
-- Reuse policy: MIT License
-- Non-academic restrictions: None
+- Primary target: Linux; Windows development is supported for platform-neutral
+  commands and WSL/Docker is used for external bioinformatics tools
+- License: MIT
+- Runtime user: non-root UID/GID 10001
+- Clinical status: research harmonization and validation software; not a direct
+  clinical diagnostic device
 
-## Component repositories
+## Exact container baseline
 
-| Repository | Purpose | Operating system target | Main language(s) | Notes |
-| --- | --- | --- | --- | --- |
-| `panel_VCF_vcf2maf_pipeline` | Normalize panel VCF inputs and generate MAF outputs | Linux | Bash shell | Depends on bcftools, Picard, VEP, and vcf2maf |
-| `HGVS_to_minimal_MAF_pipeline` | Convert HGVS-formatted inputs into minimal MAF | Linux | Bash shell, Python | Uses Ensembl REST resources and Python packages |
-| `minimal_MAF_to_annotated_MAF_pipeline` | Convert minimal MAF into annotated MAF | Linux | Bash shell, Python | Depends on vcf2maf and a GRCh37 reference FASTA |
-| `gene_name_harmonization` | Harmonize gene symbols across naming variants | Linux or macOS; Windows via Python environment | Python | Utility package for gene nomenclature cleanup |
-| `gene_fusion_normalizer` | Normalize and split fusion gene notation | Linux or macOS; Windows via Python environment | Python | Utility package for fusion-gene normalization |
-| `hgvs_normerlizer` | Normalize heterogeneous HGVS notation | Linux or macOS; Windows via Python environment | Python | Utility package for HGVS cleanup |
+| Component | Pinned version or revision |
+| --- | --- |
+| Python runtime | 3.10.12 |
+| bcftools | 1.13 |
+| SAMtools | 1.13 |
+| Ensembl VEP | 116.1, digest-pinned base image |
+| Picard | 3.1.1, SHA-256 validated JAR |
+| vcf2maf | `754d68ab4ad3eba29199c5a62e0061745aed7e7e` |
+| openpyxl | 3.1.5, wheel hash pinned |
+| et-xmlfile | 2.0.0, wheel hash pinned |
 
-## External requirements
+The complete executable and resource locks are in `resources/`, while the exact
+image recipes are under `docker/`.
 
-- `bcftools`
-- `samtools`
-- `Picard`
-- `Ensembl VEP`
-- `vcf2maf`
-- Python 3 with packages required by the individual utilities
+## Verification baseline
 
-## Editorial note
+- 63 automated tests pass inside the Linux core container.
+- Line coverage is 80.99%; CI enforces at least 70%.
+- Synthetic tests include CSV delimiter regression, VCF assembly inference,
+  multiallelic splitting, left alignment, REF validation, empty-VCF behavior,
+  HGVS/gene/fusion normalization, negative-strand insertion mapping, frozen REST
+  replay, manifest hashing, and canonical route concordance.
+- Full HGVS conversion was replayed with `--network none`, 2,003 cache hits, and
+  zero fetched responses; output hashes matched the host result.
 
-For manuscript metadata, use the exact umbrella repository URL rather than the top-level GitHub account URL.
+## Historical component repositories
+
+The six repositories linked from the project README preserve development
+provenance. The consolidated package in this repository is the supported revision
+release and contains tests spanning all component functions.
+
+For journal metadata, use the exact repository URL:
+`https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework`.

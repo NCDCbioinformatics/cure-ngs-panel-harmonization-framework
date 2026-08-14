@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "unit_of_analysis": "unique sample-aware genomic variant key",
+  "variant_key": [
+    "Tumor_Sample_Barcode",
+    "bcftools-normalized chromosome (chr prefix ignored)",
+    "VCF POS",
+    "VCF REF",
+    "VCF ALT"
+  ],
+  "genome_build": "GRCh37",
+  "reference_label": "direct-vcf",
+  "query_label": "report-hgvs",
+  "technical_fixture_count": 12,
+  "technical_fixture_note": "Caller/file-route/genome-build fixtures; not patient samples.",
+  "reference": {
+    "rows": 2626,
+    "unique_variants": 2624,
+    "duplicate_rows": 2,
+    "eligibility_columns_any_nonempty": [
+      "HGVSc",
+      "HGVSp",
+      "HGVSp_Short"
+    ],
+    "evaluable_rows": 2151,
+    "ineligible_rows": 475,
+    "evaluable_unique_variants": 2149
+  },
+  "query": {
+    "rows": 2110,
+    "unique_variants": 2108,
+    "duplicate_rows": 2
+  },
+  "normalization": {
+    "tool": "bcftools 1.13",
+    "reference_source_maf_rows": 2625,
+    "reference_multiallelic_source_rows_split": 1,
+    "reference_allele_records_before_normalization": 2626,
+    "query_source_maf_rows": 2110,
+    "query_multiallelic_source_rows_split": 0,
+    "query_allele_records_before_normalization": 2110
+  },
+  "overall": {
+    "analysis_set": "all-input-variants",
+    "sample_id": "ALL",
+    "reference_unique": 2624,
+    "query_unique": 2108,
+    "concordant": 2095,
+    "reference_only": 529,
+    "query_only": 13,
+    "reference_recovery_percent": 79.84,
+    "query_ppv_percent": 99.38,
+    "exact_set_agreement_percent": 79.45,
+    "f1_percent": 88.55
+  },
+  "evaluable_subset": {
+    "analysis_set": "hgvs-evaluable-subset",
+    "sample_id": "ALL",
+    "reference_unique": 2149,
+    "query_unique": 2108,
+    "concordant": 2095,
+    "reference_only": 54,
+    "query_only": 13,
+    "reference_recovery_percent": 97.49,
+    "query_ppv_percent": 99.38,
+    "exact_set_agreement_percent": 96.9,
+    "f1_percent": 98.43
+  },
+  "definitions": {
+    "reference_recovery_percent": "concordant / reference unique variants * 100",
+    "query_ppv_percent": "concordant / query unique variants * 100",
+    "exact_set_agreement_percent": "intersection / union * 100 (Jaccard)",
+    "f1_percent": "2 * concordant / (2 * concordant + reference-only + query-only) * 100",
+    "true_negatives": "not defined for a variant-list comparison"
+  },
+  "discordance_decomposition": {
+    "unresolved_hgvs_mapping": 40,
+    "alternative_locus_pairs_from_accessionless_gene_hgvs": 13,
+    "additional_direct_only_multiallelic_allele": 1
+  }
+}

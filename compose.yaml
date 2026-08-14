@@ -1,0 +1,24 @@
+services:
+  cure-ngs:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: cure-ngs-harmonizer:0.1.0
+    read_only: true
+    tmpfs:
+      - /tmp:size=2G,mode=1777
+    volumes:
+      - type: bind
+        source: ${CURE_NGS_INPUT_DIR:?set CURE_NGS_INPUT_DIR}
+        target: /data/input
+        read_only: true
+      - type: bind
+        source: ${CURE_NGS_OUTPUT_DIR:?set CURE_NGS_OUTPUT_DIR}
+        target: /data/output
+      - type: bind
+        source: ${CURE_NGS_REFERENCE_DIR:?set CURE_NGS_REFERENCE_DIR}
+        target: /references
+        read_only: true
+    user: "10001:10001"
+    security_opt:
+      - no-new-privileges:true

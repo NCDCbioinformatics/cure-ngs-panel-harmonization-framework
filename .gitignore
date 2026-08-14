@@ -1,4 +1,5 @@
 analysis/
+.codex_tmp/
 .DS_Store
 Thumbs.db
 *.log
@@ -7,5 +8,11 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+.coverage
+htmlcov/
+ci-output/
+build/
+dist/
+*.egg-info/
 .venv/
 venv/

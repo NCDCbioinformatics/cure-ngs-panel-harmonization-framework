@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools==75.8.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cure-ngs-harmonizer"
+version = "0.1.0"
+description = "Provenance-aware harmonization of heterogeneous panel NGS variant data"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "National Cancer Data Center" }]
+dependencies = [
+  "et-xmlfile==2.0.0",
+  "openpyxl==3.1.5",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest==8.3.5",
+  "pytest-cov==6.0.0",
+]
+
+[project.scripts]
+cure-ngs = "cure_ngs.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+markers = [
+  "integration: requires external bioinformatics executables",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["cure_ngs"]

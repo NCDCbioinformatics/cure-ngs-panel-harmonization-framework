@@ -3,6 +3,7 @@ message: "If you use this framework or repository metadata, please cite the manu
 title: "CURE-NGS Panel Harmonization Framework"
 type: software
 version: "0.1.0"
+date-released: 2026-08-14
 license: MIT
 authors:
   - family-names: Ahn
@@ -32,4 +33,4 @@ authors:
   - family-names: Lee
     given-names: Keun Seok
 repository-code: "https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework"
-abstract: "Umbrella repository for the CURE-NGS panel harmonization framework and its component bioinformatics pipelines."
+abstract: "Tested, containerized, provenance-aware software for harmonizing heterogeneous panel NGS variants through VCF, structured-HGVS, and report-derived routes."

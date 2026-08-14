@@ -1,0 +1,4 @@
+##fileformat=VCFv4.2
+##reference=GRCh37
+##contig=<ID=1,length=249250621>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO

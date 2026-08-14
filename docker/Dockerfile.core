@@ -1,0 +1,49 @@
+FROM docker.io/library/ubuntu:22.04@sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends \
+        bcftools=1.13-1 \
+        ca-certificates \
+        libhts3=1.13+ds-2build1 \
+        python3=3.10.6-1~22.04.1 \
+        python3-pip=22.0.2+dfsg-1ubuntu0.7 \
+        samtools=1.13-4 \
+        tini \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-runtime.txt /opt/cure-ngs/requirements-runtime.txt
+
+RUN python3 -m pip install \
+        --disable-pip-version-check \
+        --no-cache-dir \
+        --no-deps \
+        --require-hashes \
+        --requirement /opt/cure-ngs/requirements-runtime.txt
+
+RUN groupadd --gid 10001 cure-ngs \
+    && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin cure-ngs \
+    && mkdir -p /opt/cure-ngs /data/input /data/output /references \
+    && chown -R 10001:10001 /data/output
+
+COPY src /opt/cure-ngs/src
+COPY resources /opt/cure-ngs/resources
+
+ENV LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/opt/cure-ngs/src \
+    PYTHONUNBUFFERED=1 \
+    TZ=UTC
+
+LABEL org.opencontainers.image.title="CURE-NGS Harmonizer Core" \
+      org.opencontainers.image.description="Core preprocessing and validation tools for panel NGS harmonization" \
+      org.opencontainers.image.version="0.1.0" \
+      org.opencontainers.image.source="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework" \
+      org.opencontainers.image.licenses="MIT"
+
+USER 10001:10001
+WORKDIR /data
+ENTRYPOINT ["/usr/bin/tini", "--", "python3", "-m", "cure_ngs.cli"]
+CMD ["--help"]

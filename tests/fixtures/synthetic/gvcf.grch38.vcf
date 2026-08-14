@@ -1,0 +1,9 @@
+##fileformat=VCFv4.2
+##reference=GRCh38
+##contig=<ID=chr1,length=33>
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	fixture_tumor
+chr1	1	.	T	<NON_REF>	.	PASS	END=5	GT	0/0
+chr1	10	.	C	T,<NON_REF>	60	PASS	.	GT	1/2
+chr1	20	.	T	<DEL>	60	PASS	END=22	GT	0/1

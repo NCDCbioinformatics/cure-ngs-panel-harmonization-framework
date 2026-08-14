@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "status": "reference-audit-baseline-0.1.0",
+  "notes": "Checksums below preserve the audited legacy VEP 102 reference assets used for the historical GRCh37 benchmark. VEP 116.1 deployments must mount a matching cache and record its checksum in the run manifest.",
+  "profiles": {
+    "grch37-legacy-vep102": {
+      "assembly": "GRCh37",
+      "contig_style": "UCSC",
+      "vep_cache_release": "102",
+      "resources": {
+        "reference_fasta": {
+          "filename": "hg19.fa",
+          "sha256": "92b96d16b307d824f3b6b9dc63feb237a75226f82ca2166d51ecec039bee4449"
+        },
+        "reference_fai": {
+          "filename": "hg19.fa.fai",
+          "sha256": "63689f241ff7c9e8364142f4b519dcd6d208e51d85f1ce5e906dff9c10358491"
+        },
+        "reference_dict": {
+          "filename": "hg19.dict",
+          "sha256": "5329a96ba32f488890a7cee6c55cb707c302d65c79192c350f9b869c64e559de"
+        },
+        "liftover_chain_from_grch38": {
+          "filename": "hg38ToHg19.over.chain.gz",
+          "sha256": "14a712e8e147d9fc8e9d87d51977b46f6f8ddb93efbe5d0843d86b6205f587b1"
+        }
+      }
+    },
+    "grch38-development-vep102": {
+      "assembly": "GRCh38",
+      "contig_style": "UCSC",
+      "vep_cache_release": "102",
+      "resources": {
+        "reference_fasta": {
+          "filename": "Homo_sapiens_assembly38.fasta",
+          "sha256": "93157a161863464c9435062fd67c173fdaf99cb8b32f1455018361387ffa5564"
+        },
+        "reference_fai": {
+          "filename": "Homo_sapiens_assembly38.fasta.fai",
+          "sha256": "edefd93c489dc1baefad312f40388089f8db5cf6dcc3ba0955669ead274e8b6b"
+        },
+        "reference_dict": {
+          "filename": "Homo_sapiens_assembly38.dict",
+          "sha256": "07523b4a0afd1127ae909f92f8b3911aff096461aed7eff3f1acf5bdfc1dc103"
+        },
+        "liftover_chain_from_grch37": {
+          "filename": "hg19_to_hg38.chain",
+          "sha256": "a073d8914233b5542d29761ab8ec4b3815052b13964919c12a1efb2e311fbf39"
+        }
+      }
+    }
+  }
+}

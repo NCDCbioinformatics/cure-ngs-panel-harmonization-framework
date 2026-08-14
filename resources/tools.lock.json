@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "status": "release-baseline-0.1.0",
+  "tools": {
+    "bcftools": {
+      "version": "1.13",
+      "package": "bcftools=1.13-1"
+    },
+    "samtools": {
+      "version": "1.13",
+      "package": "samtools=1.13-4"
+    },
+    "python": {
+      "version": "3.10.12",
+      "package": "python3=3.10.6-1~22.04.1"
+    },
+    "openpyxl": {
+      "version": "3.1.5",
+      "sha256": "5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2"
+    },
+    "et-xmlfile": {
+      "version": "2.0.0",
+      "sha256": "7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa"
+    },
+    "ensembl-vep-primary": {
+      "release": "116.1",
+      "container": "docker.io/ensemblorg/ensembl-vep@sha256:6972667883d89b9fa55e5cbe94f1b4c259ebc6bbd178310cef78f617e055eb75"
+    },
+    "ensembl-vep-legacy": {
+      "release": "102",
+      "ensembl_commit_label": "102.347f9ed",
+      "container": "docker.io/ensemblorg/ensembl-vep@sha256:5fb8c14ed8744a57234352ea5015e9b260f7abac2c6583f41a6d208d239092e5"
+    },
+    "picard-primary": {
+      "version": "3.1.1",
+      "source_url": "https://github.com/broadinstitute/picard/releases/download/3.1.1/picard.jar",
+      "filename": "picard.jar",
+      "sha256": "15c79f51fd0ac001049f9dd7b9bac1dbdf759dcb0230a89c7f6d1f246e8bbab4"
+    },
+    "picard-legacy-local": {
+      "version": "3.1.1",
+      "filename": "picard.jar",
+      "sha256": "15c79f51fd0ac001049f9dd7b9bac1dbdf759dcb0230a89c7f6d1f246e8bbab4"
+    },
+    "vcf2maf": {
+      "revision": "754d68ab4ad3eba29199c5a62e0061745aed7e7e",
+      "filename": "vcf2maf.pl",
+      "sha256": "f669a0799d4f99462479443fd6f4d7c8cb1f2c05fa901bdb4ff867a0f618e92c",
+      "source_archive_sha256": "e2f1d754a95ed30ec0193c743273e446ac8fbef8b5ab4027d458fa66f85711ed"
+    }
+  }
+}
