@@ -11,9 +11,13 @@ VEP, Picard, or vcf2maf.
 Build and smoke test with Docker or Podman:
 
 ```bash
-docker build -f docker/Dockerfile -t cure-ngs-harmonizer:0.1.0 .
+docker build --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
+  -f docker/Dockerfile -t cure-ngs-harmonizer:0.1.0 .
 docker run --rm cure-ngs-harmonizer:0.1.0 versions
 ```
+
+`SOURCE_REVISION` is stored in the OCI `org.opencontainers.image.revision`
+label. GitHub Actions supplies the triggering commit SHA automatically.
 
 The table normalizers are included in the same non-root image. For example:
 

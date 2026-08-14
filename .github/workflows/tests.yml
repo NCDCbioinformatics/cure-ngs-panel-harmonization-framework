@@ -38,7 +38,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build digest- and version-pinned core image
-        run: docker build --file docker/Dockerfile.core --tag cure-ngs:test .
+        run: >-
+          docker build
+          --build-arg SOURCE_REVISION=${{ github.sha }}
+          --file docker/Dockerfile.core
+          --tag cure-ngs:test .
       - name: Prepare output directory for non-root UID 10001
         run: mkdir ci-output && chmod 0777 ci-output
       - name: Exercise CSV regression under hardened container settings

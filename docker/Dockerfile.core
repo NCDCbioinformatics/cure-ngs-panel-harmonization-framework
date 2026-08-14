@@ -1,6 +1,7 @@
 FROM docker.io/library/ubuntu:22.04@sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG SOURCE_REVISION=uncommitted
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
@@ -41,6 +42,7 @@ LABEL org.opencontainers.image.title="CURE-NGS Harmonizer Core" \
       org.opencontainers.image.description="Core preprocessing and validation tools for panel NGS harmonization" \
       org.opencontainers.image.version="0.1.0" \
       org.opencontainers.image.source="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
       org.opencontainers.image.licenses="MIT"
 
 USER 10001:10001
