@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0",
+  "organization": "NCDCbioinformatics",
+  "audited_at_utc": "2026-08-15T04:23:10Z",
+  "selection_policy": "Latest published, non-draft, non-prerelease GitHub Release returned by the releases/latest API at audit time. Release tags are resolved to immutable commit SHAs, and every uploaded asset is size- and SHA-256-pinned.",
+  "components": [
+    {
+      "repository": "panel_VCF_vcf2maf_pipeline",
+      "role": "VCF preprocessing, assembly handling, and VCF-to-MAF conversion",
+      "release": {
+        "id": 299205271,
+        "tag": "NCDC_batch_vcf2maf_V.1.3.3_github",
+        "name": "NCDC_batch_vcf2maf_V.1.3.3",
+        "published_at": "2026-03-20T00:05:22Z",
+        "commit_sha": "25eef0406d4f8aeeb90c32d31d267bb158ceff94",
+        "url": "https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline/releases/tag/NCDC_batch_vcf2maf_V.1.3.3_github"
+      },
+      "assets": [
+        {
+          "name": "NCDC_batch_vcf2maf_V.1.3.3_github.sh",
+          "size": 38332,
+          "sha256": "81c587619ace9c2acf892df7df31c6a4a3317bbc26ba76752cf6b7b2a06b7778",
+          "url": "https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline/releases/download/NCDC_batch_vcf2maf_V.1.3.3_github/NCDC_batch_vcf2maf_V.1.3.3_github.sh"
+        }
+      ]
+    },
+    {
+      "repository": "HGVS_to_minimal_MAF_pipeline",
+      "role": "HGVS-driven minimal-MAF generation",
+      "release": {
+        "id": 273308933,
+        "tag": "minimal_maf_vep_hg38tohg19_V.1.0.3",
+        "name": "minimal_maf_vep_hg38tohg19_V.1.0.3_github",
+        "published_at": "2025-12-30T00:53:56Z",
+        "commit_sha": "68cb277a5596f9e4a7ac7c61e43ba52ddb787632",
+        "url": "https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline/releases/tag/minimal_maf_vep_hg38tohg19_V.1.0.3"
+      },
+      "assets": [
+        {
+          "name": "hgvs_to_minimal_maf_vep_V101_embedded.py",
+          "size": 19226,
+          "sha256": "acff9e3732ca8281f2889faff37e6111dad1e00e6a5cf26bf860db69dbe586f6",
+          "url": "https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline/releases/download/minimal_maf_vep_hg38tohg19_V.1.0.3/hgvs_to_minimal_maf_vep_V101_embedded.py"
+        },
+        {
+          "name": "minimal_maf_vep_hg38tohg19_V.1.0.3_github.sh",
+          "size": 20855,
+          "sha256": "ca2d82cd3da9cb15f95dbc9e6bfc311113cdcdc270280076ff58590c2a56023d",
+          "url": "https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline/releases/download/minimal_maf_vep_hg38tohg19_V.1.0.3/minimal_maf_vep_hg38tohg19_V.1.0.3_github.sh"
+        }
+      ]
+    },
+    {
+      "repository": "minimal_MAF_to_annotated_MAF_pipeline",
+      "role": "Minimal-MAF-to-annotated-MAF conversion",
+      "release": {
+        "id": 273336726,
+        "tag": "minimal_maf_to_vep_maf_V.1.0.2",
+        "name": "minimal_maf_to_vep_maf_V.1.0.2",
+        "published_at": "2025-12-30T05:20:14Z",
+        "commit_sha": "ce331cf3e5d41f17cd91e2bbc6f805135097a895",
+        "url": "https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline/releases/tag/minimal_maf_to_vep_maf_V.1.0.2"
+      },
+      "assets": [
+        {
+          "name": "minimal_maf_to_vep_maf_V.1.0.2_github.sh",
+          "size": 11593,
+          "sha256": "36d91b4ed3af6c2e25ce739b9d1c119a2e640d35c2080623527dd596e47fdd4e",
+          "url": "https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline/releases/download/minimal_maf_to_vep_maf_V.1.0.2/minimal_maf_to_vep_maf_V.1.0.2_github.sh"
+        }
+      ]
+    },
+    {
+      "repository": "gene_name_harmonization",
+      "role": "Gene-symbol harmonization",
+      "release": {
+        "id": 256893647,
+        "tag": "gene_normalizer_human",
+        "name": "gene_normalizer_human_0.2.1",
+        "published_at": "2025-10-24T05:12:32Z",
+        "commit_sha": "bc3eeee054b96cbe3047c609513ccfaf232b0fa6",
+        "url": "https://github.com/NCDCbioinformatics/gene_name_harmonization/releases/tag/gene_normalizer_human"
+      },
+      "assets": [
+        {
+          "name": "gene_normalizer_human_0.2.1.zip",
+          "size": 71205287,
+          "sha256": "98c49250a78fb600bd9c9a094bf613920698280db4558ee8cc0900bb1ecda873",
+          "url": "https://github.com/NCDCbioinformatics/gene_name_harmonization/releases/download/gene_normalizer_human/gene_normalizer_human_0.2.1.zip"
+        }
+      ],
+      "upstream_metadata_note": "The GitHub release and asset are labelled 0.2.1; the archived pyproject.toml and version.py still report 0.2.0. The release ID, tag, commit, asset name, size, and digest are therefore all retained without silently rewriting upstream metadata."
+    },
+    {
+      "repository": "gene_fusion_normalizer",
+      "role": "Fusion-gene normalization",
+      "release": {
+        "id": 256898068,
+        "tag": "gene_fusion_normalizer",
+        "name": "gene_fusion_normalizer_0.2.1",
+        "published_at": "2025-10-24T05:58:45Z",
+        "commit_sha": "6fd6c563425614ba6d91cc6a65d0561c0e9a6f98",
+        "url": "https://github.com/NCDCbioinformatics/gene_fusion_normalizer/releases/tag/gene_fusion_normalizer"
+      },
+      "assets": [
+        {
+          "name": "gene_fusion_normalizer_0.2.1.zip",
+          "size": 71208467,
+          "sha256": "53fa5ffbd2544e90dd2b59d3514cda2e5ba3086c23eb85246cc6bd596d096261",
+          "url": "https://github.com/NCDCbioinformatics/gene_fusion_normalizer/releases/download/gene_fusion_normalizer/gene_fusion_normalizer_0.2.1.zip"
+        }
+      ],
+      "upstream_metadata_note": "The GitHub release and asset are labelled 0.2.1; the archived pyproject.toml and version.py still report 0.2.0. The release ID, tag, commit, asset name, size, and digest are therefore all retained without silently rewriting upstream metadata."
+    },
+    {
+      "repository": "hgvs_normerlizer",
+      "role": "HGVS nomenclature normalization",
+      "release": {
+        "id": 260136879,
+        "tag": "hgvsnorm-cli-0.2.2.tar",
+        "name": "hgvsnorm-cli-0.2.2.tar",
+        "published_at": "2025-11-06T04:43:02Z",
+        "commit_sha": "91ee579a312d5841adf42c894e80d1fdb1f37f86",
+        "url": "https://github.com/NCDCbioinformatics/hgvs_normerlizer/releases/tag/hgvsnorm-cli-0.2.2.tar"
+      },
+      "assets": [
+        {
+          "name": "hgvsnorm-cli-0.2.2.tar.gz",
+          "size": 3333,
+          "sha256": "70f1c59c9b198576ce4342a646381092c6790f0f8e162aba1b96a674415302aa",
+          "url": "https://github.com/NCDCbioinformatics/hgvs_normerlizer/releases/download/hgvsnorm-cli-0.2.2.tar/hgvsnorm-cli-0.2.2.tar.gz"
+        }
+      ]
+    }
+  ]
+}

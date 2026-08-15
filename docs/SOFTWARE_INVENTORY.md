@@ -33,7 +33,7 @@ image recipes are under `docker/`.
 
 ## Verification baseline
 
-- 65 automated tests pass inside the Linux core container.
+- 67 automated tests pass inside the Linux core container.
 - Branch-aware coverage is 77.10%; CI enforces at least 70%.
 - Synthetic tests include CSV delimiter regression, VCF assembly inference,
   multiallelic splitting, left alignment, REF validation, empty-VCF behavior,
@@ -42,11 +42,19 @@ image recipes are under `docker/`.
 - Full HGVS conversion was replayed with `--network none`, 2,003 cache hits, and
   zero fetched responses; output hashes matched the host result.
 
-## Historical component repositories
+## Six-component release baseline
 
-The six repositories linked from the project README preserve development
-provenance. The consolidated package in this repository is the supported revision
-release and contains tests spanning all component functions.
+The consolidated implementation is anchored to the latest published GitHub
+Release of each of the six NCDCbioinformatics component repositories as audited
+on 15 August 2026. The exact release IDs, tags, tag-resolved commit SHAs, asset
+URLs, byte sizes, and SHA-256 digests are recorded in
+`resources/components.lock.json`. CI compares this lock with all six live
+`releases/latest` endpoints. Full details and the release table are provided in
+`docs/COMPONENT_RELEASE_BASELINE.md`.
+
+The consolidated package in this repository is the supported revision release
+and contains tests spanning all component functions. Historical release assets
+are not silently edited; revision fixes are layered and tested here.
 
 For journal metadata, use the exact repository URL:
 `https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework`.

@@ -41,6 +41,11 @@ Code Availability declaration: All code described in this manuscript is publicly
 - https://github.com/NCDCbioinformatics/gene_fusion_normalizer
 - https://github.com/NCDCbioinformatics/hgvs_normerlizer
 
+The consolidated release baseline is resolved from the latest published GitHub
+Release in each of these six repositories. Release IDs, tags, immutable commit
+SHAs, asset sizes, and SHA-256 digests are recorded in
+`resources/components.lock.json` and checked against GitHub by CI.
+
 ## Author Contribution declaration
 
 Author Contribution declaration: Jaewoo Ahn and Phillip Park contributed to the study concept and design. Jaewoo Ahn, Phillip Park, and Yeonho Choi developed software and prepared visualizations. Jaewoo Ahn, Seonjae Kim, and Na Yeon Oh curated the data and project materials. Jaewoo Ahn and Phillip Park performed platform testing and validation. Jaewoo Ahn and Phillip Park wrote the original draft. Jaewoo Ahn, Phillip Park, Yeonho Choi, Kui Son Choi, Sun-Young Kong, Seog-Yun Park, Hyoeun Shim, Sangmi Lee, Jeonghee Yun, Seonjae Kim, Na Yeon Oh, Jaihong Han, and Keun Seok Lee reviewed and edited the manuscript. Keun Seok Lee acquired funding. Jaihong Han and Keun Seok Lee supervised the study. All authors read and approved the final manuscript.

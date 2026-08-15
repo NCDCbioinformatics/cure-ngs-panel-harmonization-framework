@@ -64,8 +64,8 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The Linux core container passed all 65 tests with 77.10% branch-aware coverage. Native
-Windows runs 63 platform-independent tests and skips the two tests that require
+The Linux core container passed all 67 tests with 77.10% branch-aware coverage. Native
+Windows runs 65 platform-independent tests and skips the two tests that require
 `bcftools`; both skipped tests pass in the Linux container.
 
 Inspect a synthetic VCF and report all inferred properties:
@@ -126,19 +126,26 @@ the per-fixture TSV, and the script that generates revised Figure 4. Synthetic
 cross-route fixtures included under `tests/fixtures/synthetic/` yield 100% exact
 set agreement and require no patient data.
 
-## Historical Component Repositories
+## Six-Component Release Baseline
 
-| Repository | Role in the framework | Primary implementation |
+| Repository | Role in the framework | Latest audited GitHub Release |
 | --- | --- | --- |
-| [panel_VCF_vcf2maf_pipeline](https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline) | VCF preprocessing, build harmonization, and VCF-to-MAF conversion | Bash shell with external bioinformatics tools |
-| [HGVS_to_minimal_MAF_pipeline](https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline) | HGVS-driven minimal MAF generation | Bash shell and Python |
-| [minimal_MAF_to_annotated_MAF_pipeline](https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline) | Minimal-MAF-to-annotated-MAF conversion | Bash shell and Python |
-| [gene_name_harmonization](https://github.com/NCDCbioinformatics/gene_name_harmonization) | Gene symbol normalization utility | Python |
-| [gene_fusion_normalizer](https://github.com/NCDCbioinformatics/gene_fusion_normalizer) | Fusion gene name normalization utility | Python |
-| [hgvs_normerlizer](https://github.com/NCDCbioinformatics/hgvs_normerlizer) | HGVS nomenclature normalization utility | Python |
+| [panel_VCF_vcf2maf_pipeline](https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline) | VCF preprocessing, build harmonization, and VCF-to-MAF conversion | `NCDC_batch_vcf2maf_V.1.3.3_github` |
+| [HGVS_to_minimal_MAF_pipeline](https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline) | HGVS-driven minimal MAF generation | `minimal_maf_vep_hg38tohg19_V.1.0.3` |
+| [minimal_MAF_to_annotated_MAF_pipeline](https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline) | Minimal-MAF-to-annotated-MAF conversion | `minimal_maf_to_vep_maf_V.1.0.2` |
+| [gene_name_harmonization](https://github.com/NCDCbioinformatics/gene_name_harmonization) | Gene symbol normalization utility | `gene_normalizer_human` / release 0.2.1 |
+| [gene_fusion_normalizer](https://github.com/NCDCbioinformatics/gene_fusion_normalizer) | Fusion gene name normalization utility | `gene_fusion_normalizer` / release 0.2.1 |
+| [hgvs_normerlizer](https://github.com/NCDCbioinformatics/hgvs_normerlizer) | HGVS nomenclature normalization utility | `hgvsnorm-cli-0.2.2.tar` |
 
-The repositories below preserve the development history. The unified
-`cure-ngs` interface in this repository is the supported revision release.
+The baseline was resolved from each repository's current `releases/latest` API
+response on 15 August 2026. Exact release IDs, tag-resolved commit SHAs, asset
+sizes, and SHA-256 digests are frozen in
+[`resources/components.lock.json`](resources/components.lock.json). CI verifies
+that all six locks still identify the current latest releases. See the
+[`component release baseline`](docs/COMPONENT_RELEASE_BASELINE.md) for the full
+audit and integration interpretation. The unified `cure-ngs` interface in this
+repository is the supported revision release; the six repositories remain the
+versioned behavioral and development provenance.
 
 ## Software Environment
 

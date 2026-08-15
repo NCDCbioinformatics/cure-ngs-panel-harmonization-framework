@@ -8,6 +8,15 @@ permissions:
   contents: read
 
 jobs:
+  component-releases:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: Verify all six latest GitHub Release locks
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/verify_component_releases.py --check-latest
+
   python:
     runs-on: ubuntu-22.04
     strategy:
