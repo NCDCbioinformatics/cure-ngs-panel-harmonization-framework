@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from cure_ngs.cli import build_parser, main
+from cure_ngs.models import Assembly
 
 from test_gene import _catalog
 
@@ -51,6 +52,24 @@ def test_table_cli_default_delimiter_is_tab() -> None:
     )
 
     assert args.delimiter == "\t"
+
+
+def test_vcf_to_maf_cli_defaults_to_grch37() -> None:
+    args = build_parser().parse_args(
+        [
+            "vcf-to-maf",
+            "input.vcf",
+            "output.maf",
+            "--source-reference",
+            "hg19.fa",
+            "--cache-version",
+            "116",
+            "--vep-data",
+            "vep-data",
+        ]
+    )
+
+    assert args.target_assembly is Assembly.GRCH37
 
 
 def test_normalize_hgvs_table_cli_uses_requested_csv_delimiter(

@@ -12,6 +12,8 @@
 - Runtime user: non-root UID/GID 10001
 - Clinical status: research harmonization and validation software; not a direct
   clinical diagnostic device
+- Default target assembly: GRCh37/hg19 for the current CURE-NGS Korean
+  clinical-panel deployment; GRCh38 is an explicit supported alternative
 
 ## Exact container baseline
 
@@ -31,8 +33,8 @@ image recipes are under `docker/`.
 
 ## Verification baseline
 
-- 63 automated tests pass inside the Linux core container.
-- Line coverage is 80.99%; CI enforces at least 70%.
+- 65 automated tests pass inside the Linux core container.
+- Branch-aware coverage is 77.10%; CI enforces at least 70%.
 - Synthetic tests include CSV delimiter regression, VCF assembly inference,
   multiallelic splitting, left alignment, REF validation, empty-VCF behavior,
   HGVS/gene/fusion normalization, negative-strand insertion mapping, frozen REST

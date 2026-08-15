@@ -39,8 +39,12 @@ docker run --rm \
   --volume "$PWD/references:/references:ro" \
   cure-ngs-harmonizer:0.1.0 \
   normalize-vcf /data/input/sample.vcf /data/output/sample.normalized.vcf.gz \
-  --reference-fasta /references/GRCh38.fa --assembly GRCh38
+  --reference-fasta /references/hg19.fa --assembly GRCh37
 ```
+
+For the end-to-end `vcf-to-maf` command, the target assembly defaults to
+GRCh37/hg19 to match the current CURE-NGS Korean clinical-panel deployment.
+Use `--target-assembly GRCh38` explicitly for a GRCh38-native or migration run.
 
 The image runs as UID/GID 10001. Python table dependencies are exact-version and
 wheel-hash pinned in `requirements-runtime.txt`; bioinformatics executable and

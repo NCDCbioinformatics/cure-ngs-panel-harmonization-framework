@@ -1,9 +1,15 @@
+from inspect import signature
 from pathlib import Path
 
 import pytest
 
 from cure_ngs.models import Assembly
-from cure_ngs.workflows import vcf_to_maf
+from cure_ngs.workflows import DEFAULT_TARGET_ASSEMBLY, vcf_to_maf
+
+
+def test_python_workflow_defaults_to_grch37() -> None:
+    assert DEFAULT_TARGET_ASSEMBLY is Assembly.GRCH37
+    assert signature(vcf_to_maf).parameters["target_assembly"].default is Assembly.GRCH37
 
 
 def test_cross_build_workflow_requires_liftover_assets(tmp_path: Path) -> None:

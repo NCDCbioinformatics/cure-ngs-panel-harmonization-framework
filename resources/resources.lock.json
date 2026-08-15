@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "status": "reference-audit-baseline-0.1.0",
-  "notes": "Checksums below preserve the audited legacy VEP 102 reference assets used for the historical GRCh37 benchmark. VEP 116.1 deployments must mount a matching cache and record its checksum in the run manifest.",
+  "notes": "Checksums below preserve the audited VEP 102 reference assets used for the historical benchmark. GRCh37/hg19 is the current CURE-NGS clinical-panel default; GRCh38 remains available as an explicit alternative. VEP 116.1 deployments must mount a matching cache and record its checksum in the run manifest.",
   "profiles": {
-    "grch37-legacy-vep102": {
+    "grch37-primary-vep102": {
       "assembly": "GRCh37",
       "contig_style": "UCSC",
       "vep_cache_release": "102",
@@ -26,7 +26,7 @@
         }
       }
     },
-    "grch38-development-vep102": {
+    "grch38-alternative-vep102": {
       "assembly": "GRCh38",
       "contig_style": "UCSC",
       "vep_cache_release": "102",

@@ -22,7 +22,7 @@ from .runtime import runtime_versions
 from .table_io import normalize_hgvs_table
 from .tools import normalize_vcf, tool_version
 from .vcf import inspect_vcf, sanitize_vcf
-from .workflows import vcf_to_maf
+from .workflows import DEFAULT_TARGET_ASSEMBLY, vcf_to_maf
 
 
 def _assembly(value: str) -> Assembly:
@@ -209,7 +209,13 @@ def build_parser() -> argparse.ArgumentParser:
     workflow.add_argument("--target-reference")
     workflow.add_argument("--source-assembly", type=_assembly)
     workflow.add_argument(
-        "--target-assembly", type=_assembly, default=Assembly.GRCH38
+        "--target-assembly",
+        type=_assembly,
+        default=DEFAULT_TARGET_ASSEMBLY,
+        help=(
+            "Target genome assembly (default: GRCh37/hg19 for the CURE-NGS "
+            "Korean clinical-panel deployment; pass GRCh38 explicitly when needed)"
+        ),
     )
     workflow.add_argument("--chain")
     workflow.add_argument("--picard-jar")

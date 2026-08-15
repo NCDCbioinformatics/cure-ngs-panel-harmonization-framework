@@ -9,6 +9,8 @@ from .models import Assembly
 from .tools import normalize_vcf
 from .vcf import inspect_vcf
 
+DEFAULT_TARGET_ASSEMBLY = Assembly.GRCH37
+
 
 @dataclass(frozen=True)
 class VcfToMafRun:
@@ -35,7 +37,7 @@ def vcf_to_maf(
     *,
     source_reference: str | Path,
     target_reference: str | Path | None,
-    target_assembly: Assembly = Assembly.GRCH38,
+    target_assembly: Assembly = DEFAULT_TARGET_ASSEMBLY,
     source_assembly: Assembly | None = None,
     chain_path: str | Path | None = None,
     picard_jar: str | Path | None = None,

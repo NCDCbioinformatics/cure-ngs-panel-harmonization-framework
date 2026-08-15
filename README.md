@@ -64,8 +64,8 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The Linux core container passed all 63 tests with 80.99% line coverage. Native
-Windows runs 61 platform-independent tests and skips the two tests that require
+The Linux core container passed all 65 tests with 77.10% branch-aware coverage. Native
+Windows runs 63 platform-independent tests and skips the two tests that require
 `bcftools`; both skipped tests pass in the Linux container.
 
 Inspect a synthetic VCF and report all inferred properties:
@@ -80,7 +80,7 @@ auditable manifest:
 
 ```bash
 cure-ngs normalize-vcf input.vcf normalized.vcf.gz \
-  --reference-fasta /references/GRCh38.fa --assembly GRCh38
+  --reference-fasta /references/hg19.fa --assembly GRCh37
 ```
 
 ## Containerized Runtime
@@ -145,7 +145,7 @@ The repositories below preserve the development history. The unified
 - Operating systems: Linux environments are the primary supported target; Windows users can operate through WSL when needed.
 - Programming language: Python, with external bioinformatics executables invoked as argument arrays.
 - Exact external requirements: recorded in `resources/tools.lock.json`, the Dockerfiles, and command manifests.
-- Reference policy: GRCh38 is preferred for new deployments. GRCh38-to-GRCh37 liftover is retained only as an explicit compatibility mode for a legacy GRCh37 cohort.
+- Reference policy: GRCh37/hg19 is the CURE-NGS deployment default because it matches the predominant assembly used by the Korean clinical panel workflows expected by the program and therefore minimizes avoidable coordinate conversion. GRCh38 remains fully supported through an explicit `--target-assembly GRCh38` selection, including for WGS-oriented or future migration workflows. The default is an interoperability policy, not a claim that GRCh37 is technically superior to GRCh38.
 
 ## Publication and Editorial Metadata
 
