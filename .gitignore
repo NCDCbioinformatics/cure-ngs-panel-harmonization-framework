@@ -11,6 +11,9 @@ __pycache__/
 .coverage
 htmlcov/
 ci-output/
+reviewer-output/
+workspace/output/*
+!workspace/output/.gitkeep
 build/
 dist/
 *.egg-info/

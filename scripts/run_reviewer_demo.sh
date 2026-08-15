@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -n "${CONTAINER_ENGINE:-}" ]; then
+  ENGINE="$CONTAINER_ENGINE"
+elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  ENGINE="docker"
+elif command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+  ENGINE="podman"
+elif command -v docker >/dev/null 2>&1; then
+  ENGINE="docker"
+else
+  ENGINE="podman"
+fi
+IMAGE="${CURE_NGS_IMAGE:-cure-ngs-harmonizer:reviewer-core}"
+RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+OUTPUT_DIR="$ROOT_DIR/reviewer-output/$RUN_ID"
+
+command -v "$ENGINE" >/dev/null 2>&1 || {
+  echo "ERROR: container engine not found: $ENGINE" >&2
+  exit 2
+}
+
+SECURITY_OPT="no-new-privileges:true"
+if "$ENGINE" --version 2>/dev/null | grep -qi podman; then
+  SECURITY_OPT="no-new-privileges"
+fi
+
+mkdir -p "$OUTPUT_DIR"
+chmod 0777 "$OUTPUT_DIR"
+
+if [ "${CURE_NGS_SKIP_BUILD:-0}" = "1" ]; then
+  echo "[1/9] Using prebuilt core image $IMAGE"
+else
+  echo "[1/9] Building pinned core image"
+  "$ENGINE" build \
+    --file "$ROOT_DIR/docker/Dockerfile.core" \
+    --tag "$IMAGE" \
+    "$ROOT_DIR"
+fi
+
+run_cure_ngs() {
+  "$ENGINE" run --rm --network none --read-only \
+    --tmpfs /tmp:size=256m,mode=1777 \
+    --security-opt "$SECURITY_OPT" \
+    --mount "type=bind,source=$ROOT_DIR/examples,target=/examples,readonly" \
+    --mount "type=bind,source=$OUTPUT_DIR,target=/data/output" \
+    "$IMAGE" "$@"
+}
+
+echo "[2/9] Checking pinned executables"
+run_cure_ngs versions >"$OUTPUT_DIR/versions.json"
+run_cure_ngs doctor --profile core >"$OUTPUT_DIR/doctor.json"
+grep -q '"status": "READY"' "$OUTPUT_DIR/doctor.json"
+
+echo "[3/9] Inspecting the public GRCh37 vcf2maf fixture"
+(cd "$ROOT_DIR/examples/public/vcf2maf" && sha256sum --check checksums.sha256)
+run_cure_ngs inspect-vcf \
+  /examples/public/vcf2maf/test_b37.vcf --assembly GRCh37 \
+  >"$OUTPUT_DIR/public-vcf-inspection.json"
+grep -q '"record_count": 25' "$OUTPUT_DIR/public-vcf-inspection.json"
+
+echo "[4/9] Splitting, left-aligning, and deduplicating a GRCh37 VCF"
+run_cure_ngs normalize-vcf \
+  /examples/synthetic/normalize.grch37.vcf \
+  /data/output/normalized.grch37.vcf \
+  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --assembly GRCh37
+test "$(grep -vc '^#' "$OUTPUT_DIR/normalized.grch37.vcf")" -eq 4
+
+echo "[5/9] Replaying HGVS-to-minimal-MAF without network access"
+run_cure_ngs hgvs-table-to-minimal-maf \
+  /examples/synthetic/hgvs_to_minimal_input.tsv \
+  /data/output/from-hgvs.grch37.maf \
+  --failed /data/output/from-hgvs.failed.tsv \
+  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --assembly GRCh37 \
+  --response-cache /examples/synthetic/rest-cache \
+  --offline-replay
+grep -q $'GENE\tsynthetic_sample_001\tchr1\t10\t10\tC\tT\tGRCh37' \
+  "$OUTPUT_DIR/from-hgvs.grch37.maf"
+
+echo "[6/9] Converting minimal MAF to a reference-valid VCF"
+mkdir -p "$OUTPUT_DIR/from-minimal"
+chmod 0777 "$OUTPUT_DIR/from-minimal"
+run_cure_ngs minimal-maf-to-vcf \
+  /examples/synthetic/minimal.grch37.maf \
+  /data/output/from-minimal \
+  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --assembly GRCh37
+test "$(grep -vc '^#' "$OUTPUT_DIR/from-minimal/synthetic_sample_001.from_minimal_maf.vcf")" -eq 3
+
+echo "[7/9] Testing gene, fusion, and tabular HGVS normalization"
+run_cure_ngs normalize-gene P53 \
+  --gtf /examples/synthetic/genes.gtf \
+  --hgnc /examples/synthetic/hgnc.tsv >"$OUTPUT_DIR/gene.json"
+grep -q '"matched_symbol": "TP53"' "$OUTPUT_DIR/gene.json"
+run_cure_ngs normalize-fusion EML4-ALK \
+  --gtf /examples/synthetic/genes.gtf \
+  --hgnc /examples/synthetic/hgnc.tsv >"$OUTPUT_DIR/fusion.json"
+grep -q '"normalized": "EML4--ALK"' "$OUTPUT_DIR/fusion.json"
+run_cure_ngs normalize-hgvs-table \
+  /examples/synthetic/hgvs_input.csv \
+  /data/output/hgvs.normalized.csv --delimiter comma
+grep -q 'c.818G>A' "$OUTPUT_DIR/hgvs.normalized.csv"
+
+echo "[8/9] Calculating exact cross-route concordance"
+mkdir -p "$OUTPUT_DIR/concordance"
+chmod 0777 "$OUTPUT_DIR/concordance"
+run_cure_ngs compare-maf-routes /data/output/concordance \
+  --reference-maf /examples/synthetic/concordance_direct.grch37.maf \
+  --query-maf /examples/synthetic/concordance_report.grch37.maf \
+  --reference-require-any HGVSc \
+  --reference-fasta /examples/synthetic/tiny.grch37.fa
+grep -q '"exact_set_agreement_percent": 100.0' \
+  "$OUTPUT_DIR/concordance/concordance_summary.json"
+
+echo "[9/9] Reviewer demonstration passed"
+echo "Results: $OUTPUT_DIR"

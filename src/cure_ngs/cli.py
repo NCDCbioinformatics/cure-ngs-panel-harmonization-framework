@@ -16,6 +16,7 @@ from .hgvs_to_maf import hgvs_table_to_minimal_maf
 from .liftover import liftover_vcf
 from .maf import minimal_maf_to_vcfs
 from .models import Assembly
+from .preflight import check_environment
 from .provenance import write_manifest
 from .resources import verify_profile_resources
 from .runtime import runtime_versions
@@ -57,9 +58,33 @@ def build_parser() -> argparse.ArgumentParser:
     versions.add_argument("--bcftools", default="bcftools")
     versions.add_argument("--samtools", default="samtools")
     versions.add_argument("--vep", default="vep")
+    versions.add_argument("--perl", default="perl")
     versions.add_argument("--java", default="java")
     versions.add_argument("--picard-jar")
     versions.add_argument("--vcf2maf")
+
+    doctor = subparsers.add_parser(
+        "doctor", help="Check tools and mounted resources before a workflow run"
+    )
+    doctor.add_argument(
+        "--profile",
+        choices=("core", "vcf-to-maf", "liftover", "gene", "all"),
+        default="core",
+    )
+    doctor.add_argument("--assembly", type=_assembly, default=Assembly.GRCH37)
+    doctor.add_argument("--reference-fasta")
+    doctor.add_argument("--vep-data")
+    doctor.add_argument("--cache-version", type=int, default=116)
+    doctor.add_argument("--chain")
+    doctor.add_argument("--gtf")
+    doctor.add_argument("--hgnc")
+    doctor.add_argument("--bcftools", default="bcftools")
+    doctor.add_argument("--samtools", default="samtools")
+    doctor.add_argument("--vep", default="vep")
+    doctor.add_argument("--perl", default="perl")
+    doctor.add_argument("--java", default="java")
+    doctor.add_argument("--picard-jar")
+    doctor.add_argument("--vcf2maf")
 
     inspect = subparsers.add_parser("inspect-vcf", help="Inspect VCF structure")
     inspect.add_argument("input")
@@ -268,6 +293,7 @@ def main(argv: list[str] | None = None) -> int:
                         bcftools=args.bcftools,
                         samtools=args.samtools,
                         vep=args.vep,
+                        perl=args.perl,
                         java=args.java,
                         picard_jar=args.picard_jar,
                         vcf2maf=args.vcf2maf,
@@ -276,6 +302,27 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
             return 0
+
+        if args.command == "doctor":
+            report = check_environment(
+                profile=args.profile,
+                assembly=args.assembly,
+                reference_fasta=args.reference_fasta,
+                vep_data=args.vep_data,
+                cache_version=args.cache_version,
+                chain=args.chain,
+                gtf=args.gtf,
+                hgnc=args.hgnc,
+                bcftools=args.bcftools,
+                samtools=args.samtools,
+                vep=args.vep,
+                perl=args.perl,
+                java=args.java,
+                picard_jar=args.picard_jar,
+                vcf2maf=args.vcf2maf,
+            )
+            print(json.dumps(report, indent=2, ensure_ascii=False))
+            return 0 if report["status"] == "READY" else 2
 
         if args.command == "inspect-vcf":
             result = inspect_vcf(

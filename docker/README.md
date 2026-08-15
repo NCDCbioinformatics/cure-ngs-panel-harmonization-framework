@@ -5,6 +5,11 @@ It also contains checksum-verified Picard 3.1.1 and vcf2maf revision
 `754d68ab4ad3eba29199c5a62e0061745aed7e7e`, plus bcftools 1.13 and samtools
 1.13. Reference FASTA files and the VEP cache are mounted read-only.
 
+For a clean-host installation, authoritative resource download links, expected
+directory layout, index creation, cache compatibility, and `doctor` preflight
+commands are documented in [`docs/REFERENCE_DATA.md`](../docs/REFERENCE_DATA.md).
+Do not copy paths from an author's workstation into the image.
+
 `docker/Dockerfile.core` is a smaller image for fast preprocessing tests without
 VEP, Picard, or vcf2maf.
 
@@ -14,6 +19,7 @@ Build and smoke test with Docker or Podman:
 docker build --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   -f docker/Dockerfile -t cure-ngs-harmonizer:0.1.0 .
 docker run --rm cure-ngs-harmonizer:0.1.0 versions
+docker run --rm cure-ngs-harmonizer:0.1.0 doctor --profile core
 ```
 
 `SOURCE_REVISION` is stored in the OCI `org.opencontainers.image.revision`
@@ -49,3 +55,9 @@ Use `--target-assembly GRCh38` explicitly for a GRCh38-native or migration run.
 The image runs as UID/GID 10001. Python table dependencies are exact-version and
 wheel-hash pinned in `requirements-runtime.txt`; bioinformatics executable and
 resource locks are stored under `resources/`.
+
+Run the small, network-disabled reviewer walkthrough with:
+
+```bash
+bash scripts/run_reviewer_demo.sh
+```

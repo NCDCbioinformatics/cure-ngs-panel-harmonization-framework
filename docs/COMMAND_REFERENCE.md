@@ -1,0 +1,173 @@
+# Command reference and workflows
+
+The supported interface is the unified `cure-ngs` command. The six historical
+repositories are provenance baselines; reviewers do not need to install six
+independent Python or shell environments.
+
+## Container invocation pattern
+
+```bash
+docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
+  --security-opt no-new-privileges:true \
+  --volume "$PWD/input:/data/input:ro" \
+  --volume "$PWD/output:/data/output" \
+  --volume "$PWD/references:/references:ro" \
+  cure-ngs-harmonizer:0.1.0 COMMAND OPTIONS
+```
+
+All paths passed to `COMMAND` are container paths, not host paths. Replace the
+three host directories without editing source code.
+
+## VCF or gVCF route
+
+Inspect input structure and inferred assembly:
+
+```bash
+cure-ngs inspect-vcf sample.vcf
+```
+
+If the VCF lacks reliable assembly metadata, declare it explicitly:
+
+```bash
+cure-ngs inspect-vcf sample.vcf --assembly GRCh37
+```
+
+Normalize against the exact FASTA. This splits multiallelic positions into
+unique records, left-aligns indels, validates REF alleles, and removes exact
+duplicates:
+
+```bash
+cure-ngs normalize-vcf sample.vcf sample.normalized.vcf.gz \
+  --reference-fasta /references/grch37/hg19.fa \
+  --assembly GRCh37
+```
+
+End-to-end GRCh37-native VCF to MAF:
+
+```bash
+cure-ngs vcf-to-maf sample.vcf sample.maf \
+  --source-assembly GRCh37 \
+  --source-reference /references/grch37/hg19.fa \
+  --target-assembly GRCh37 \
+  --cache-version 116 \
+  --vep-data /references/vep \
+  --vcf-tumor-id TUMOR \
+  --tumor-id sample-tumor \
+  --vcf-normal-id NORMAL \
+  --normal-id sample-normal \
+  --forks 4
+```
+
+For a GRCh38 input targeting GRCh37, add the target FASTA, chain, and Picard:
+
+```bash
+cure-ngs vcf-to-maf sample.grch38.vcf sample.grch37.maf \
+  --source-assembly GRCh38 \
+  --source-reference /references/grch38/hg38.fa \
+  --target-assembly GRCh37 \
+  --target-reference /references/grch37/hg19.fa \
+  --chain /references/liftover/hg38ToHg19.over.chain.gz \
+  --picard-jar /opt/picard/picard.jar \
+  --cache-version 116 \
+  --vep-data /references/vep \
+  --vcf-tumor-id TUMOR \
+  --tumor-id sample-tumor
+```
+
+Multisample VCFs require explicit `--vcf-tumor-id`; never infer tumor/normal
+roles from column order. Empty VCFs are accepted as valid negative panel results
+and produce auditable empty outputs rather than being treated as corrupt files.
+
+## Structured HGVS or report-derived route
+
+Normalize HGVS fields while retaining original cells and an audit trail:
+
+```bash
+cure-ngs normalize-hgvs-table report.csv report.normalized.csv \
+  --delimiter comma
+```
+
+Required columns for HGVS-to-minimal-MAF conversion are `sample ID`, `Gene`,
+`HGVSc`, `HGVSp`, and `HGVSp_short`. The first online run writes each Ensembl
+REST response and its hash to a cache:
+
+```bash
+cure-ngs hgvs-table-to-minimal-maf report.tsv minimal.maf \
+  --failed minimal.failed.tsv \
+  --reference-fasta /references/grch37/hg19.fa \
+  --assembly GRCh37 \
+  --response-cache /data/output/ensembl-rest-cache
+```
+
+Replay the same run without network access:
+
+```bash
+cure-ngs hgvs-table-to-minimal-maf report.tsv minimal.replay.maf \
+  --failed minimal.replay.failed.tsv \
+  --reference-fasta /references/grch37/hg19.fa \
+  --assembly GRCh37 \
+  --response-cache /data/input/ensembl-rest-cache \
+  --offline-replay
+```
+
+Rows with missing, ambiguous, or reference-inconsistent mappings are written to
+the failure table; they are never silently selected.
+
+## Minimal MAF re-annotation route
+
+Convert minimal MAF alleles into one VCF per complete sample identifier:
+
+```bash
+cure-ngs minimal-maf-to-vcf minimal.maf per-sample-vcfs \
+  --reference-fasta /references/grch37/hg19.fa \
+  --assembly GRCh37
+```
+
+Then normalize and annotate each VCF:
+
+```bash
+cure-ngs annotate-vcf per-sample-vcfs/sample.vcf sample.annotated.maf \
+  --reference-fasta /references/grch37/hg19.fa \
+  --assembly GRCh37 \
+  --cache-version 116 \
+  --vep-data /references/vep \
+  --tumor-id sample
+```
+
+## Gene and fusion normalization
+
+```bash
+cure-ngs normalize-gene P53 \
+  --gtf /references/genes/gencode.v19.annotation.gtf.gz \
+  --hgnc /references/genes/hgnc_complete_set.txt
+
+cure-ngs normalize-fusion EML4-ALK \
+  --gtf /references/genes/gencode.v19.annotation.gtf.gz \
+  --hgnc /references/genes/hgnc_complete_set.txt
+```
+
+Fuzzy matching is disabled by default. Direction is retained in fusion output,
+and ambiguous aliases/splits are reported rather than guessed.
+
+## Concordance
+
+```bash
+cure-ngs compare-maf-routes concordance-output \
+  --reference-maf direct-route.maf \
+  --query-maf report-route.maf \
+  --reference-require-any HGVSc \
+  --reference-fasta /references/grch37/hg19.fa
+```
+
+Outputs include aggregate JSON, per-sample TSV, discordant variants, canonical
+VCFs when a FASTA is provided, and a provenance manifest.
+
+## Exit codes and manifests
+
+- `0`: successful command or environment ready
+- `2`: invalid input, missing resource, external command failure, or failed
+  environment preflight
+
+Transformation commands write a `*.manifest.json` file containing input and
+output hashes, parameters, external versions, and executed commands. Retain the
+manifest with every reported result.

@@ -22,5 +22,5 @@ jobs:
       - name: Run link checker
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --verbose --no-progress --accept 200,403,429 README.md docs/**/*.md NOTICE.md
+          args: --verbose --no-progress --accept 200,403,429 README.md docs/**/*.md examples/**/*.md data/README.md docker/README.md NOTICE.md
           fail: true

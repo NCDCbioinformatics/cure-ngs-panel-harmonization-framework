@@ -31,6 +31,12 @@ jobs:
           test -f CITATION.cff
           test -f docs/MANUSCRIPT_DECLARATIONS.md
           test -f docs/SOFTWARE_INVENTORY.md
+          test -f docs/INSTALLATION.md
+          test -f docs/REFERENCE_DATA.md
+          test -f docs/COMMAND_REFERENCE.md
+          test -f docs/REVIEWER_REPRODUCTION.md
+          test -f scripts/run_reviewer_demo.sh
+          test -f examples/public/vcf2maf/test_b37.vcf
           test -f data/README.md
 
       - name: Verify required text markers

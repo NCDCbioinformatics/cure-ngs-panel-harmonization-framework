@@ -35,6 +35,36 @@ It provides one stable project home page for:
 - Main routes: VCF or gVCF, structured HGVS tables, and report-derived inputs from manual abstraction or OCR
 - Current role of this repo: supported revision software, tests, containers, and publication metadata; no patient-level data distribution
 
+## Reviewer Quick Start
+
+A reviewer can verify the software without installing Python, VEP, or a human
+reference genome on the host:
+
+```bash
+git clone https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework.git
+cd cure-ngs-panel-harmonization-framework
+bash scripts/run_reviewer_demo.sh
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_reviewer_demo.ps1
+```
+
+The walkthrough builds the pinned core image, disables container networking,
+and tests functions mapped from all six historical components using original
+synthetic GRCh37 fixtures and one attributed public vcf2maf fixture. Expected
+final message: `Reviewer demonstration passed`.
+
+Start here for a clean installation:
+
+- [Installation and deployment](docs/INSTALLATION.md)
+- [Reference genome, VEP cache, chain, GTF, and HGNC setup](docs/REFERENCE_DATA.md)
+- [Commands and end-to-end workflows](docs/COMMAND_REFERENCE.md)
+- [Reviewer reproduction checklist](docs/REVIEWER_REPRODUCTION.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+
 ## Framework Map
 
 ```mermaid
@@ -52,7 +82,7 @@ flowchart LR
     J -. executes .-> H
 ```
 
-## Quick Start
+## Developer Quick Start
 
 The Python package supports Python 3.10–3.12. Development installation and the
 complete test suite are:
@@ -64,8 +94,8 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The Linux core container passed all 67 tests with 77.10% branch-aware coverage. Native
-Windows runs 65 platform-independent tests and skips the two tests that require
+The Linux core container passed all 71 tests with 79.76% branch-aware coverage. Native
+Windows runs 69 platform-independent tests and skips the two tests that require
 `bcftools`; both skipped tests pass in the Linux container.
 
 Inspect a synthetic VCF and report all inferred properties:
@@ -101,6 +131,23 @@ SAMtools 1.13, Ensembl VEP 116.1, Picard 3.1.1, and vcf2maf commit
 downloaded artifacts, wheels, and reference profiles use SHA-256 validation.
 The smaller `docker/Dockerfile.core` image supports preprocessing, table
 normalization, and concordance without VEP, Picard, or vcf2maf.
+
+The image contains software dependencies but intentionally excludes large
+reference assets. Before an institutional run, mount the institution's FASTA,
+FAI, optional Picard dictionary/liftover chain, release-matched VEP cache, GTF,
+and HGNC table as required. Authoritative download links and exact directory
+layouts are provided in [the reference-data guide](docs/REFERENCE_DATA.md).
+
+Check the mounted environment before analysis:
+
+```bash
+docker run --rm \
+  --volume "$PWD/references:/references:ro" \
+  cure-ngs-harmonizer:0.1.0 doctor \
+  --profile vcf-to-maf --assembly GRCh37 \
+  --reference-fasta /references/grch37/hg19.fa \
+  --vep-data /references/vep --cache-version 116
+```
 
 ## Technical Validation
 
@@ -160,15 +207,18 @@ versioned behavioral and development provenance.
 - Software inventory summary: [docs/SOFTWARE_INVENTORY.md](docs/SOFTWARE_INVENTORY.md)
 - Citation metadata: [CITATION.cff](CITATION.cff)
 - Data availability note: [data/README.md](data/README.md)
+- Public and synthetic reviewer data: [examples/README.md](examples/README.md)
 - License clarification: [NOTICE.md](NOTICE.md)
 
 ## Data and Code Availability
 
 This manuscript describes a methodological and software framework. No new patient-level CURE-NGS dataset is publicly released through this repository. Patient-level data are not distributed here.
 
-Public code availability, synthetic tests, containers, and aggregate technical
-validation are provided directly through this repository. The component
-repositories listed above remain available for development provenance.
+Public code availability, synthetic tests, containers, aggregate technical
+validation, and an attributed public GRCh37 VCF used in local testing are
+provided directly through this repository. No CURE-NGS patient-level data are
+included. The component repositories listed above remain available for
+development provenance.
 
 ## Why the GitHub Sidebar May Look Different
 

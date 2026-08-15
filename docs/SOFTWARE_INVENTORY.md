@@ -33,8 +33,8 @@ image recipes are under `docker/`.
 
 ## Verification baseline
 
-- 67 automated tests pass inside the Linux core container.
-- Branch-aware coverage is 77.10%; CI enforces at least 70%.
+- 71 automated tests pass inside the Linux core container.
+- Branch-aware coverage is 79.76%; CI enforces at least 70%.
 - Synthetic tests include CSV delimiter regression, VCF assembly inference,
   multiallelic splitting, left alignment, REF validation, empty-VCF behavior,
   HGVS/gene/fusion normalization, negative-strand insertion mapping, frozen REST

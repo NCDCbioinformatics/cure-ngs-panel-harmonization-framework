@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "cache_key": "803c33474a52ae1e79f4295b924efbccecd2fb721992d12c9abf537f16de6553",
+  "endpoint": "https://grch37.rest.ensembl.org",
+  "assembly": "GRCh37",
+  "expression": "GENE:c.2A>G",
+  "request_url": "synthetic-fixture-no-network-request",
+  "http_status": 200,
+  "retrieved_at_utc": "synthetic-fixture",
+  "response_sha256": "a6bbb3fc4e900a08d90e653ae227ad2453c6f7598752707592e5fdbd2997a090",
+  "response_headers": {
+    "x-cure-ngs-fixture": "synthetic"
+  }
+}

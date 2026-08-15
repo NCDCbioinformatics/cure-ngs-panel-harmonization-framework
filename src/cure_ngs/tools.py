@@ -18,8 +18,8 @@ def tool_version(executable: str) -> str:
         encoding="utf-8",
         errors="replace",
     )
-    first_line = (result.stdout or result.stderr).splitlines()[0]
-    return first_line.strip()
+    lines = (result.stdout or result.stderr).splitlines()
+    return next(line.strip() for line in lines if line.strip())
 
 
 @dataclass(frozen=True)

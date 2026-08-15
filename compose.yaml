@@ -9,16 +9,16 @@ services:
       - /tmp:size=2G,mode=1777
     volumes:
       - type: bind
-        source: ${CURE_NGS_INPUT_DIR:?set CURE_NGS_INPUT_DIR}
+        source: ${CURE_NGS_INPUT_DIR:-./examples}
         target: /data/input
         read_only: true
       - type: bind
-        source: ${CURE_NGS_OUTPUT_DIR:?set CURE_NGS_OUTPUT_DIR}
+        source: ${CURE_NGS_OUTPUT_DIR:-./workspace/output}
         target: /data/output
       - type: bind
-        source: ${CURE_NGS_REFERENCE_DIR:?set CURE_NGS_REFERENCE_DIR}
+        source: ${CURE_NGS_REFERENCE_DIR:-./references}
         target: /references
         read_only: true
-    user: "10001:10001"
+    user: "${CURE_NGS_UID:-10001}:${CURE_NGS_GID:-10001}"
     security_opt:
       - no-new-privileges:true

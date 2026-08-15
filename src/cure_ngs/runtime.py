@@ -55,6 +55,7 @@ def runtime_versions(
     bcftools: str = "bcftools",
     samtools: str = "samtools",
     vep: str = "vep",
+    perl: str = "perl",
     java: str = "java",
     picard_jar: str | None = None,
     vcf2maf: str | None = None,
@@ -65,6 +66,7 @@ def runtime_versions(
         "bcftools": _optional_executable_version("bcftools", bcftools),
         "samtools": _optional_executable_version("samtools", samtools),
         "vep": _vep_version(vep),
+        "perl": _optional_executable_version("perl", perl),
     }
 
     if shutil.which(java) is None:

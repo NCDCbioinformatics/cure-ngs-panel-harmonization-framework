@@ -1,0 +1,3 @@
+Tumor_Sample_Barcode	Chromosome	Start_Position	End_Position	Reference_Allele	Tumor_Seq_Allele2	Reference_Assembly	HGVSc
+synthetic_sample_001	chr1	4	5	-	A	GRCh37	c.1_2insA
+synthetic_sample_002	chr1	10	10	C	T/G	GRCh37	c.10C>T
