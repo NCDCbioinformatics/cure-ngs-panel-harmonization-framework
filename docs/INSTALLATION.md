@@ -5,7 +5,7 @@ clean computer. CURE-NGS does not require the host institution to reproduce the
 authors' Python environment. The recommended runtime is the version-pinned
 Docker/OCI image built from this repository.
 
-## Host prerequisites
+## 1. Install Docker or Podman on the host
 
 Required:
 
@@ -30,7 +30,14 @@ where appropriate. Linux is the primary supported runtime. On Windows, use
 Docker Desktop with the WSL 2 backend and store large reference data inside the
 WSL filesystem when possible for better I/O performance.
 
-## Obtain a reproducible source revision
+Verify the installation before downloading CURE-NGS:
+
+```bash
+docker version
+docker run --rm hello-world
+```
+
+## 2. Obtain a reproducible source revision
 
 ```bash
 git clone https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework.git
@@ -42,7 +49,7 @@ For a manuscript analysis, record the release tag or full commit SHA in the
 methods and keep the generated `*.manifest.json` file with the output. Do not
 run an unrecorded moving branch for a final analysis.
 
-## Build the images
+## 3. Build or pull the images
 
 The full image contains VEP, vcf2maf, Picard, bcftools, SAMtools, Perl, Java,
 and the Python application. It does not contain the large genome resources.
@@ -81,9 +88,11 @@ docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.1.0-core
 ```
 
 Verify that the package is visible on the repository's Packages page before
-using these pull commands; building from the tagged source remains the fallback.
+using these pull commands. A `No packages published` message means that the
+release workflow has not published the images yet; build from the tagged source
+instead.
 
-## Reviewer test without large downloads
+## 4. Reviewer test without large downloads
 
 This deterministic test builds the core image and exercises functions mapped
 from all six historical components. It disables container networking during
@@ -104,7 +113,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_reviewer_demo.ps1
 
 Expected final message: `Reviewer demonstration passed`.
 
-## Configure institutional paths
+## 5. Configure institutional paths
 
 Copy the environment template and edit only host paths and, on Linux, the
 runtime UID/GID if required:
@@ -123,13 +132,13 @@ Linux bind mounts must be writable by the selected runtime user. The default is
 UID/GID 10001. Either grant that identity access to the output directory or set
 `CURE_NGS_UID=$(id -u)` and `CURE_NGS_GID=$(id -g)` in `.env`.
 
-## Prepare external resources
+## 6. Prepare external resources
 
 Continue with [Reference and annotation data](REFERENCE_DATA.md). After the
 files are mounted, do not start a long analysis until `cure-ngs doctor` reports
 `READY` for the intended profile.
 
-## Native Python installation
+## 7. Native Python installation
 
 Native installation is intended for developers and platform-neutral commands,
 not as the primary reproducible deployment route:

@@ -32,6 +32,7 @@ jobs:
           test -f docs/MANUSCRIPT_DECLARATIONS.md
           test -f docs/SOFTWARE_INVENTORY.md
           test -f docs/INSTALLATION.md
+          test -f docs/PROJECT_STRUCTURE.md
           test -f docs/REFERENCE_DATA.md
           test -f docs/COMMAND_REFERENCE.md
           test -f docs/REVIEWER_REPRODUCTION.md

@@ -35,6 +35,83 @@ It provides one stable project home page for:
 - Main routes: VCF or gVCF, structured HGVS tables, and report-derived inputs from manual abstraction or OCR
 - Current role of this repo: supported revision software, tests, containers, and publication metadata; no patient-level data distribution
 
+## Project Organization and Repository Roles
+
+CURE-NGS is **one supported software product** assembled from capabilities that
+were originally developed in six component repositories. This umbrella
+repository is the canonical installation, testing, issue-reporting, and
+publication location. The component repositories preserve release and
+development provenance; reviewers do not need to configure six separate
+environments.
+
+| Repository | Responsibility in CURE-NGS | Supported unified entry point | Latest audited component release |
+| --- | --- | --- | --- |
+| **[cure-ngs-panel-harmonization-framework](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework)** | Canonical project home, unified CLI, Docker/OCI images, tests, reviewer data, validation, and manuscript metadata | `cure-ngs` / `scripts/run_reviewer_demo.sh` | Consolidated release `0.1.0` |
+| [panel_VCF_vcf2maf_pipeline](https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline) | VCF sanitation, assembly handling, and VCF-to-MAF conversion | `cure-ngs normalize-vcf` and `cure-ngs vcf-to-maf` | `NCDC_batch_vcf2maf_V.1.3.3_github` |
+| [HGVS_to_minimal_MAF_pipeline](https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline) | Structured/report-derived HGVS to minimal MAF | `cure-ngs hgvs-table-to-minimal-maf` | `minimal_maf_vep_hg38tohg19_V.1.0.3` |
+| [minimal_MAF_to_annotated_MAF_pipeline](https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline) | Minimal MAF conversion and re-annotation | `cure-ngs minimal-maf-to-vcf` and `cure-ngs annotate-vcf` | `minimal_maf_to_vep_maf_V.1.0.2` |
+| [gene_name_harmonization](https://github.com/NCDCbioinformatics/gene_name_harmonization) | Gene-symbol harmonization using GTF and HGNC | `cure-ngs normalize-gene` | `gene_normalizer_human` / release 0.2.1 |
+| [gene_fusion_normalizer](https://github.com/NCDCbioinformatics/gene_fusion_normalizer) | Direction-preserving fusion-gene normalization | `cure-ngs normalize-fusion` | `gene_fusion_normalizer` / release 0.2.1 |
+| [hgvs_normerlizer](https://github.com/NCDCbioinformatics/hgvs_normerlizer) | Tabular HGVS nomenclature normalization | `cure-ngs normalize-hgvs-table` | `hgvsnorm-cli-0.2.2.tar` |
+
+The supported deployment is therefore a single version-pinned container, not
+six independently configured containers. Exact release commits and asset
+SHA-256 values are recorded in
+[`resources/components.lock.json`](resources/components.lock.json) and checked
+against GitHub by CI. See [Project structure and repository policy](docs/PROJECT_STRUCTURE.md)
+for the ownership, integration, versioning, and reviewer workflow in detail.
+
+## Download and Install
+
+### 1. Install a container engine
+
+- Windows or macOS: install [Docker Desktop](https://docs.docker.com/desktop/).
+- Linux: install [Docker Engine](https://docs.docker.com/engine/install/).
+- Podman is also supported; replace `docker` with `podman` in the commands.
+
+Confirm that the engine is running:
+
+```bash
+docker version
+docker run --rm hello-world
+```
+
+### 2. Obtain CURE-NGS
+
+The source-build route is available immediately and is the reproducible option
+for a commit or pull request:
+
+```bash
+git clone https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework.git
+cd cure-ngs-panel-harmonization-framework
+docker build --file docker/Dockerfile.core --tag cure-ngs-harmonizer:0.1.0-core .
+docker build --file docker/Dockerfile --tag cure-ngs-harmonizer:0.1.0 .
+```
+
+After release `0.1.0` is published and the repository **Packages** panel lists
+the images, the equivalent prebuilt images can be downloaded instead:
+
+```bash
+docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.1.0-core
+docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.1.0
+```
+
+Always verify that the package exists before relying on `docker pull`. If
+GitHub still displays `No packages published`, use the source-build route above
+until the release workflow has completed.
+
+### 3. Verify the installation
+
+```bash
+docker run --rm cure-ngs-harmonizer:0.1.0 versions
+docker run --rm cure-ngs-harmonizer:0.1.0 doctor --profile core
+bash scripts/run_reviewer_demo.sh
+```
+
+The core reviewer test needs no human reference download. Full VCF-to-MAF
+annotation requires a separately mounted GRCh37 FASTA and release-matched VEP
+116 cache; follow [Reference and annotation data](docs/REFERENCE_DATA.md).
+
 ## Reviewer Quick Start
 
 A reviewer can verify the software without installing Python, VEP, or a human
@@ -175,17 +252,10 @@ set agreement and require no patient data.
 
 ## Six-Component Release Baseline
 
-| Repository | Role in the framework | Latest audited GitHub Release |
-| --- | --- | --- |
-| [panel_VCF_vcf2maf_pipeline](https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline) | VCF preprocessing, build harmonization, and VCF-to-MAF conversion | `NCDC_batch_vcf2maf_V.1.3.3_github` |
-| [HGVS_to_minimal_MAF_pipeline](https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline) | HGVS-driven minimal MAF generation | `minimal_maf_vep_hg38tohg19_V.1.0.3` |
-| [minimal_MAF_to_annotated_MAF_pipeline](https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline) | Minimal-MAF-to-annotated-MAF conversion | `minimal_maf_to_vep_maf_V.1.0.2` |
-| [gene_name_harmonization](https://github.com/NCDCbioinformatics/gene_name_harmonization) | Gene symbol normalization utility | `gene_normalizer_human` / release 0.2.1 |
-| [gene_fusion_normalizer](https://github.com/NCDCbioinformatics/gene_fusion_normalizer) | Fusion gene name normalization utility | `gene_fusion_normalizer` / release 0.2.1 |
-| [hgvs_normerlizer](https://github.com/NCDCbioinformatics/hgvs_normerlizer) | HGVS nomenclature normalization utility | `hgvsnorm-cli-0.2.2.tar` |
-
-The baseline was resolved from each repository's current `releases/latest` API
-response on 15 August 2026. Exact release IDs, tag-resolved commit SHAs, asset
+The repository-role table above identifies every audited component release and
+its supported unified command. The baseline was resolved from each
+repository's current `releases/latest` API response on 15 August 2026. Exact
+release IDs, tag-resolved commit SHAs, asset
 sizes, and SHA-256 digests are frozen in
 [`resources/components.lock.json`](resources/components.lock.json). CI verifies
 that all six locks still identify the current latest releases. See the
