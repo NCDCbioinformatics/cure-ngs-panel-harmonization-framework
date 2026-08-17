@@ -5,6 +5,12 @@ files, and current gene nomenclature tables. These resources are large,
 release-specific, or updated independently. They must be downloaded from their
 authoritative providers, mounted read-only, and recorded with each run.
 
+For the restored multi-file NCDC V1.3.3 workflow, paths and ordered fallback
+candidates are declared in
+[`references/reference-config.example.json`](../references/reference-config.example.json).
+See the [batch workflow guide](V1.3.3_BATCH_WORKFLOW.md) for the complete mapping
+from the original shell script.
+
 ## What each workflow requires
 
 | Workflow | Required external data |
@@ -21,10 +27,17 @@ authoritative providers, mounted read-only, and recorded with each run.
 
 ```text
 references/
+|-- reference-config.json
 |-- grch37/
 |   |-- hg19.fa
 |   |-- hg19.fa.fai
-|   `-- hg19.dict
+|   |-- hg19.dict
+|   |-- Homo_sapiens_assembly19.fasta
+|   |-- Homo_sapiens_assembly19.fasta.fai
+|   |-- Homo_sapiens_assembly19.dict
+|   |-- Homo_sapiens.GRCh37.dna.toplevel.fa
+|   |-- Homo_sapiens.GRCh37.dna.toplevel.fa.fai
+|   `-- Homo_sapiens.GRCh37.dna.toplevel.dict
 |-- grch38/
 |   |-- hg38.fa
 |   |-- hg38.fa.fai
@@ -43,6 +56,11 @@ references/
 
 Only install the assembly resources needed by the institution. GRCh37/hg19 is
 the CURE-NGS panel default. GRCh38 remains supported explicitly.
+
+The single-file command needs one FASTA. The batch command can declare the
+original three GRCh37 candidates and will try them in order for each VCF. These
+files are alternatives, not sequences that are merged together. Remove a
+candidate from the JSON config if the institution does not install it.
 
 ## 1. Choose and record a FASTA
 
@@ -67,12 +85,12 @@ Create the required indexes with tools already in the full image:
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/references:/references" \
-  --entrypoint samtools cure-ngs-harmonizer:0.1.0 \
+  --entrypoint samtools cure-ngs-harmonizer:0.2.0 \
   faidx /references/grch37/hg19.fa
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/references:/references" \
-  --entrypoint java cure-ngs-harmonizer:0.1.0 \
+  --entrypoint java cure-ngs-harmonizer:0.2.0 \
   -jar /opt/picard/picard.jar CreateSequenceDictionary \
   R=/references/grch37/hg19.fa O=/references/grch37/hg19.dict
 ```
@@ -148,12 +166,29 @@ exact long-term replay is required.
 
 ## 5. Run preflight checks
 
+Check the entire configured bundle, including all FASTA indexes, Picard
+dictionaries, chain candidates, chain-to-reference labels, and the matching VEP
+cache:
+
+```bash
+cp references/reference-config.example.json references/reference-config.json
+
+docker run --rm \
+  --volume "$PWD/references:/references:ro" \
+  cure-ngs-harmonizer:0.2.0 doctor-bundle \
+  --reference-config /references/reference-config.json
+```
+
+If the data live on a NAS or a different disk, mount that directory at
+`/references` or pass `--reference-root /references`. Host paths never need to
+be embedded in the image.
+
 GRCh37 VCF-to-MAF environment:
 
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.1.0 doctor \
+  cure-ngs-harmonizer:0.2.0 doctor \
   --profile vcf-to-maf \
   --assembly GRCh37 \
   --reference-fasta /references/grch37/hg19.fa \
@@ -166,7 +201,7 @@ Gene and fusion resources:
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.1.0 doctor \
+  cure-ngs-harmonizer:0.2.0 doctor \
   --profile gene \
   --gtf /references/genes/gencode.v19.annotation.gtf.gz \
   --hgnc /references/genes/hgnc_complete_set.txt

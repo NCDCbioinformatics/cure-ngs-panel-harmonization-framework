@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "reference_root": ".",
+  "target_assembly": "GRCh37",
+  "unknown_assembly": null,
+  "output_contig_style": "numeric",
+  "assemblies": {
+    "GRCh37": {
+      "fasta_candidates": [
+        {
+          "label": "synthetic_GRCh37",
+          "path": "tiny.grch37.fa",
+          "contig_style": "numeric"
+        }
+      ]
+    }
+  },
+  "vep": {
+    "data": ".",
+    "cache_version": 116
+  },
+  "policies": {
+    "allow_all_rejected_empty": false
+  }
+}

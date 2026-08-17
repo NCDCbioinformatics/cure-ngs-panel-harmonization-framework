@@ -12,13 +12,34 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.1.0 COMMAND OPTIONS
+  cure-ngs-harmonizer:0.2.0 COMMAND OPTIONS
 ```
 
 All paths passed to `COMMAND` are container paths, not host paths. Replace the
 three host directories without editing source code.
 
 ## VCF or gVCF route
+
+For a directory of heterogeneous institutional VCF/gVCF files, use the restored
+V1.3.3 batch entry point. The reference config controls ordered FASTA and chain
+fallbacks while GRCh37 remains the default target:
+
+```bash
+cure-ngs doctor-bundle \
+  --reference-config /references/reference-config.json
+
+cure-ngs batch-vcf-to-maf /data/input /data/output \
+  --reference-config /references/reference-config.json \
+  --jobs 4 --sample-tag-length 8
+```
+
+This writes one MAF and manifest per input plus
+`vcf2maf_batch_log.tsv` and `vcf2maf_batch_summary.json`. It supports legacy
+GINS-column repair, missing sample headers, gVCF filtering, assembly detection,
+GRCh38-to-GRCh37 liftover fallback, multiple GRCh37 FASTA candidates, empty
+VCFs, missing vendor-tag declarations, numeric database-facing chromosome
+normalization, and safe parallel work directories. See the
+[full V1.3.3 batch guide](V1.3.3_BATCH_WORKFLOW.md).
 
 Inspect input structure and inferred assembly:
 
