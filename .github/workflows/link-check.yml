@@ -17,10 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Run link checker
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --verbose --no-progress --accept 200,403,429 README.md docs/**/*.md examples/**/*.md data/README.md docker/README.md NOTICE.md
+          lycheeVersion: v0.24.2
+          token: ${{ github.token }}
+          args: >-
+            --verbose --no-progress
+            --accept 200,403,429
+            --max-retries 5 --retry-wait-time 3 --timeout 30
+            README.md docs/**/*.md examples/**/*.md
+            data/README.md docker/README.md NOTICE.md
           fail: true
