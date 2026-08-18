@@ -85,12 +85,12 @@ Create the required indexes with tools already in the full image:
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/references:/references" \
-  --entrypoint samtools cure-ngs-harmonizer:0.2.0 \
+  --entrypoint samtools cure-ngs-harmonizer:0.2.1 \
   faidx /references/grch37/hg19.fa
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/references:/references" \
-  --entrypoint java cure-ngs-harmonizer:0.2.0 \
+  --entrypoint java cure-ngs-harmonizer:0.2.1 \
   -jar /opt/picard/picard.jar CreateSequenceDictionary \
   R=/references/grch37/hg19.fa O=/references/grch37/hg19.dict
 ```
@@ -169,27 +169,40 @@ exact long-term replay is required.
 
 Check the entire configured bundle, including all FASTA indexes, Picard
 dictionaries, chain candidates, chain-to-reference labels, and the matching VEP
-cache:
+cache. In addition to file existence, the check verifies primary chromosome
+lengths, observed contig styles, chain direction, chain/target-FASTA style
+compatibility, VEP species and assembly metadata, and chromosome 1 cache data.
+The installed VEP major release must also equal the configured cache version.
 
 ```bash
-cp references/reference-config.example.json references/reference-config.json
+REFERENCE_DIR=/path/to/your/reference-store
+mkdir -p config
+
+docker run --rm --volume "$PWD/config:/config" \
+  cure-ngs-harmonizer:0.2.1 init-reference-config \
+  /config/reference-config.json \
+  --reference-root /references --cache-version 116
 
 docker run --rm \
-  --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.0 doctor-bundle \
-  --reference-config /references/reference-config.json
+  --volume "$REFERENCE_DIR:/references:ro" \
+  --volume "$PWD/config:/config:ro" \
+  cure-ngs-harmonizer:0.2.1 doctor-bundle \
+  --reference-config /config/reference-config.json \
+  --reference-root /references \
+  | tee reference-bundle.preflight.json
 ```
 
 If the data live on a NAS or a different disk, mount that directory at
-`/references` or pass `--reference-root /references`. Host paths never need to
-be embedded in the image.
+`/references` and pass `--reference-root /references`. The user-controlled
+`REFERENCE_DIR` is the only host tree that the program can inspect. Host paths
+never need to be embedded in the image.
 
 GRCh37 VCF-to-MAF environment:
 
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.0 doctor \
+  cure-ngs-harmonizer:0.2.1 doctor \
   --profile vcf-to-maf \
   --assembly GRCh37 \
   --reference-fasta /references/grch37/hg19.fa \
@@ -202,7 +215,7 @@ Gene and fusion resources:
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.0 doctor \
+  cure-ngs-harmonizer:0.2.1 doctor \
   --profile gene \
   --gtf /references/genes/gencode.v19.annotation.gtf.gz \
   --hgnc /references/genes/hgnc_complete_set.txt

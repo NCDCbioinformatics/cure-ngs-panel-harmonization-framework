@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import re
@@ -9,6 +10,96 @@ from typing import Any
 
 from .models import Assembly
 from .provenance import sha256_file
+
+
+_PRIMARY_CONTIG_LENGTH = {
+    Assembly.GRCH37: 249_250_621,
+    Assembly.GRCH38: 248_956_422,
+}
+
+
+def reference_config_template(
+    *, reference_root: str, cache_version: int = 116
+) -> dict[str, object]:
+    """Return the standard multi-reference GRCh37-target bundle template."""
+
+    if not reference_root.strip():
+        raise ValueError("reference_root must be a non-empty path")
+    if cache_version < 1:
+        raise ValueError("cache_version must be a positive integer")
+    return {
+        "schema_version": "1.0",
+        "reference_root": reference_root,
+        "target_assembly": "GRCh37",
+        "unknown_assembly": "GRCh37",
+        "output_contig_style": "numeric",
+        "assemblies": {
+            "GRCh37": {
+                "fasta_candidates": [
+                    {
+                        "label": "hg19_genome",
+                        "path": "grch37/hg19.fa",
+                        "contig_style": "ucsc",
+                    },
+                    {
+                        "label": "GATK_assembly19",
+                        "path": "grch37/Homo_sapiens_assembly19.fasta",
+                        "contig_style": "numeric",
+                    },
+                    {
+                        "label": "Ensembl_GRCh37_toplevel",
+                        "path": "grch37/Homo_sapiens.GRCh37.dna.toplevel.fa",
+                        "contig_style": "numeric",
+                    },
+                ]
+            }
+        },
+        "liftover": {
+            "GRCh38_to_GRCh37": {
+                "chains": [
+                    {
+                        "label": "UCSC_hg38ToHg19",
+                        "path": "liftover/hg38ToHg19.over.chain.gz",
+                        "contig_style": "ucsc",
+                        "target_reference_label": "hg19_genome",
+                    },
+                    {
+                        "label": "Ensembl_GRCh38_to_GRCh37",
+                        "path": "liftover/GRCh38_to_GRCh37.chain.gz",
+                        "contig_style": "numeric",
+                        "target_reference_label": "GATK_assembly19",
+                    },
+                ]
+            }
+        },
+        "vep": {"data": "vep", "cache_version": cache_version},
+        "policies": {"allow_all_rejected_empty": False},
+    }
+
+
+def write_reference_config_template(
+    output_path: str | Path,
+    *,
+    reference_root: str,
+    cache_version: int = 116,
+    force: bool = False,
+) -> Path:
+    """Create a user-selected reference config without overwriting by default."""
+
+    output = Path(output_path).expanduser().resolve()
+    if output.exists() and not force:
+        raise FileExistsError(
+            f"Reference config already exists: {output}; pass --force to replace it"
+        )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    payload = reference_config_template(
+        reference_root=reference_root, cache_version=cache_version
+    )
+    output.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return output
 
 
 @dataclass(frozen=True)
@@ -263,7 +354,8 @@ def load_reference_bundle(
     for profile in liftover_profiles.values():
         if profile.target_assembly not in fasta_candidates:
             raise ValueError(
-                f"Liftover target {profile.target_assembly.value} has no FASTA candidates"
+                f"Liftover target {profile.target_assembly.value} has no "
+                "FASTA candidates"
             )
         target_labels = {
             item.label for item in fasta_candidates.get(profile.target_assembly, ())
@@ -310,26 +402,93 @@ def load_reference_bundle(
     )
 
 
-def inspect_reference_bundle(bundle: ReferenceBundle) -> dict[str, object]:
-    checks: list[dict[str, str]] = []
+def _contig_style(name: str) -> str:
+    return "ucsc" if name.casefold().startswith("chr") else "numeric"
 
-    def check_file(name: str, path: Path, expected_sha256: str | None = None) -> None:
-        present = path.is_file() and path.stat().st_size > 0
+
+def _is_primary_chromosome_one(name: str) -> bool:
+    return re.sub(r"^chr", "", name, flags=re.IGNORECASE) == "1"
+
+
+def _primary_fai_entry(path: Path) -> tuple[str, int]:
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) >= 2 and _is_primary_chromosome_one(fields[0]):
+                return fields[0], int(fields[1])
+    raise ValueError("chromosome 1 is absent from the FASTA index")
+
+
+def _primary_dict_entry(path: Path) -> tuple[str, int]:
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.startswith("@SQ\t"):
+                continue
+            values = {
+                field.split(":", maxsplit=1)[0]: field.split(":", maxsplit=1)[1]
+                for field in line.rstrip("\n").split("\t")[1:]
+                if ":" in field
+            }
+            name = values.get("SN", "")
+            if _is_primary_chromosome_one(name):
+                return name, int(values["LN"])
+    raise ValueError("chromosome 1 is absent from the sequence dictionary")
+
+
+def _primary_chain_entry(path: Path) -> tuple[str, int, str, int]:
+    opener = gzip.open if path.suffix.casefold() == ".gz" else Path.open
+    with opener(path, "rt", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.startswith("chain "):
+                continue
+            fields = line.rstrip("\n").split()
+            if len(fields) != 13:
+                continue
+            source_name, source_length = fields[2], int(fields[3])
+            target_name, target_length = fields[7], int(fields[8])
+            if _is_primary_chromosome_one(
+                source_name
+            ) and _is_primary_chromosome_one(target_name):
+                return source_name, source_length, target_name, target_length
+    raise ValueError("no chromosome-1 chain header was found")
+
+
+def _vep_cache_metadata(path: Path) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            key, separator, value = line.rstrip("\n").partition("\t")
+            if separator:
+                metadata[key] = value
+    return metadata
+
+
+def inspect_reference_bundle(
+    bundle: ReferenceBundle,
+    *,
+    runtime_vep: dict[str, str] | None = None,
+) -> dict[str, object]:
+    checks: list[dict[str, str]] = []
+    fasta_styles: dict[tuple[Assembly, str], str] = {}
+
+    def add_check(name: str, passed: bool, detail: str) -> None:
         checks.append(
             {
                 "name": name,
-                "status": "PASS" if present else "FAIL",
-                "detail": str(path),
+                "status": "PASS" if passed else "FAIL",
+                "detail": detail,
             }
         )
+
+    def check_file(name: str, path: Path, expected_sha256: str | None = None) -> None:
+        present = path.is_file() and path.stat().st_size > 0
+        add_check(name, present, str(path))
         if present and expected_sha256:
             observed = sha256_file(path)
-            checks.append(
-                {
-                    "name": f"sha256:{name}",
-                    "status": "PASS" if observed == expected_sha256 else "FAIL",
-                    "detail": f"expected={expected_sha256}; observed={observed}",
-                }
+            add_check(
+                f"sha256:{name}",
+                observed == expected_sha256,
+                f"expected={expected_sha256}; observed={observed}",
             )
 
     checks.append(
@@ -343,15 +502,35 @@ def inspect_reference_bundle(bundle: ReferenceBundle) -> dict[str, object]:
         for candidate in candidates:
             prefix = f"{assembly.value}:{candidate.label}"
             check_file(f"fasta:{prefix}", candidate.path, candidate.sha256)
-            check_file(f"fai:{prefix}", Path(f"{candidate.path}.fai"))
+            fai = Path(f"{candidate.path}.fai")
+            check_file(f"fai:{prefix}", fai)
+            if fai.is_file() and fai.stat().st_size > 0:
+                try:
+                    name, length = _primary_fai_entry(fai)
+                    expected_length = _PRIMARY_CONTIG_LENGTH[assembly]
+                    add_check(
+                        f"assembly:{prefix}",
+                        length == expected_length,
+                        f"chromosome={name}; observed_length={length}; "
+                        f"expected_{assembly.value}_length={expected_length}",
+                    )
+                    observed_style = _contig_style(name)
+                    fasta_styles[(assembly, candidate.label)] = observed_style
+                    add_check(
+                        f"contig_style:{prefix}",
+                        candidate.contig_style in {"auto", observed_style},
+                        f"configured={candidate.contig_style}; "
+                        f"observed={observed_style}; chromosome={name}",
+                    )
+                except (OSError, ValueError) as exc:
+                    add_check(f"assembly:{prefix}", False, str(exc))
     for profile in bundle.liftover_profiles.values():
         for chain in profile.chains:
-            check_file(
-                f"chain:{profile.source_assembly.value}_to_"
-                f"{profile.target_assembly.value}:{chain.label}",
-                chain.path,
-                chain.sha256,
+            profile_name = (
+                f"{profile.source_assembly.value}_to_"
+                f"{profile.target_assembly.value}:{chain.label}"
             )
+            check_file(f"chain:{profile_name}", chain.path, chain.sha256)
             label = chain.target_reference_label or profile.target_reference_label
             target_candidates = bundle.references_for(profile.target_assembly)
             target_reference = next(
@@ -360,8 +539,69 @@ def inspect_reference_bundle(bundle: ReferenceBundle) -> dict[str, object]:
             )
             check_file(
                 f"dict:{profile.target_assembly.value}:{target_reference.label}",
-                target_reference.path.with_suffix(".dict"),
+                dictionary := target_reference.path.with_suffix(".dict"),
             )
+            if dictionary.is_file() and dictionary.stat().st_size > 0:
+                try:
+                    dict_name, dict_length = _primary_dict_entry(dictionary)
+                    expected_length = _PRIMARY_CONTIG_LENGTH[profile.target_assembly]
+                    add_check(
+                        f"dict_assembly:{profile.target_assembly.value}:"
+                        f"{target_reference.label}",
+                        dict_length == expected_length,
+                        f"chromosome={dict_name}; observed_length={dict_length}; "
+                        f"expected_{profile.target_assembly.value}_length="
+                        f"{expected_length}",
+                    )
+                except (OSError, ValueError, KeyError) as exc:
+                    add_check(
+                        f"dict_assembly:{profile.target_assembly.value}:"
+                        f"{target_reference.label}",
+                        False,
+                        str(exc),
+                    )
+            if chain.path.is_file() and chain.path.stat().st_size > 0:
+                try:
+                    source_name, source_length, target_name, target_length = (
+                        _primary_chain_entry(chain.path)
+                    )
+                    expected_source = _PRIMARY_CONTIG_LENGTH[
+                        profile.source_assembly
+                    ]
+                    expected_target = _PRIMARY_CONTIG_LENGTH[
+                        profile.target_assembly
+                    ]
+                    add_check(
+                        f"chain_direction:{profile_name}",
+                        source_length == expected_source
+                        and target_length == expected_target,
+                        f"source={source_name}:{source_length} "
+                        f"(expected {profile.source_assembly.value}:"
+                        f"{expected_source}); target={target_name}:"
+                        f"{target_length} (expected "
+                        f"{profile.target_assembly.value}:{expected_target})",
+                    )
+                    source_style = _contig_style(source_name)
+                    add_check(
+                        f"chain_source_style:{profile_name}",
+                        chain.contig_style in {"auto", source_style},
+                        f"configured={chain.contig_style}; "
+                        f"observed={source_style}; chromosome={source_name}",
+                    )
+                    target_style = _contig_style(target_name)
+                    reference_style = fasta_styles.get(
+                        (profile.target_assembly, target_reference.label),
+                        target_reference.contig_style,
+                    )
+                    add_check(
+                        f"chain_target_style:{profile_name}",
+                        reference_style == "auto" or target_style == reference_style,
+                        f"chain_target={target_style}; "
+                        f"target_reference={target_reference.label}:"
+                        f"{reference_style}",
+                    )
+                except (OSError, ValueError) as exc:
+                    add_check(f"chain_direction:{profile_name}", False, str(exc))
     checks.append(
         {
             "name": "vep_data",
@@ -381,6 +621,51 @@ def inspect_reference_bundle(bundle: ReferenceBundle) -> dict[str, object]:
             "detail": str(cache),
         }
     )
+    info = cache / "info.txt"
+    check_file("vep_cache_info", info)
+    if info.is_file() and info.stat().st_size > 0:
+        try:
+            metadata = _vep_cache_metadata(info)
+            observed_assembly = metadata.get("assembly", "")
+            observed_species = metadata.get("species", "")
+            add_check(
+                "vep_cache_identity",
+                observed_assembly == bundle.target_assembly.value
+                and observed_species == "homo_sapiens",
+                f"species={observed_species or 'missing'}; "
+                f"assembly={observed_assembly or 'missing'}; "
+                f"directory_version={bundle.cache_version}",
+            )
+        except OSError as exc:
+            add_check("vep_cache_identity", False, str(exc))
+    primary_cache = next(
+        (path for path in (cache / "1", cache / "chr1") if path.is_dir()),
+        None,
+    )
+    cache_has_payload = primary_cache is not None and any(
+        item.is_file() and item.stat().st_size > 0
+        for item in primary_cache.rglob("*")
+    )
+    add_check(
+        "vep_cache_payload",
+        cache_has_payload,
+        str(primary_cache or cache / "{1,chr1}"),
+    )
+    if runtime_vep is not None:
+        runtime_status = runtime_vep.get("status")
+        runtime_version = runtime_vep.get("version", "")
+        version_match = re.search(
+            r"ensembl-vep\s*:\s*(\d+)", runtime_version, re.IGNORECASE
+        )
+        observed_version = int(version_match.group(1)) if version_match else None
+        add_check(
+            "vep_runtime_cache_compatibility",
+            runtime_status == "available"
+            and observed_version == bundle.cache_version,
+            f"runtime_status={runtime_status or 'missing'}; "
+            f"runtime_version={runtime_version or 'unknown'}; "
+            f"configured_cache_version={bundle.cache_version}",
+        )
     failed = sum(item["status"] == "FAIL" for item in checks)
     return {
         "status": "READY" if failed == 0 else "NOT_READY",

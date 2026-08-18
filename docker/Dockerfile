@@ -68,7 +68,7 @@ ENV LC_ALL=C.UTF-8 \
 
 LABEL org.opencontainers.image.title="CURE-NGS Harmonizer" \
       org.opencontainers.image.description="Reproducible panel NGS variant harmonization" \
-      org.opencontainers.image.version="0.2.0-vep116.1" \
+      org.opencontainers.image.version="0.2.1-vep116.1" \
       org.opencontainers.image.source="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework" \
       org.opencontainers.image.revision="${SOURCE_REVISION}" \
       org.opencontainers.image.licenses="MIT"
