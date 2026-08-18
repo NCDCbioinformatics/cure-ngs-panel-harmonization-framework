@@ -135,7 +135,8 @@ is the stable path seen by CURE-NGS:
 REFERENCE_DIR=/path/to/your/reference-store
 mkdir -p config
 
-docker run --rm --volume "$PWD/config:/config" \
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD/config:/config" \
   cure-ngs-harmonizer:0.2.1 init-reference-config \
   /config/reference-config.json --reference-root /references
 
