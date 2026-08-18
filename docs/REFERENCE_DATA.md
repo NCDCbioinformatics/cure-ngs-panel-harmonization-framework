@@ -100,10 +100,11 @@ PowerShell users can omit `--user "$(id -u):$(id -g)"`.
 ## 2. Install a VEP cache matching the image
 
 The image uses Ensembl VEP 116.1. Ensembl recommends matching the cache release
-to the VEP release. Its documentation explains [cache contents and version
-compatibility](https://grch37.ensembl.org/info/docs/tools/vep/script/vep_cache.html),
-and the official [Ensembl VEP repository](https://github.com/Ensembl/ensembl-vep#docker)
-documents the maintained Docker image.
+to the VEP release. The release-specific [Ensembl VEP 116
+documentation](https://github.com/Ensembl/ensembl-vep/blob/release/116/README.md)
+explains cache installation and compatibility, and the official [Ensembl VEP
+repository](https://github.com/Ensembl/ensembl-vep#docker) documents the
+maintained Docker image.
 
 Install the GRCh37 cache and FASTA through the official VEP image:
 
