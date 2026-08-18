@@ -33,7 +33,7 @@ gigabytes; see `docs/REFERENCE_DATA.md`.
 
 | Historical component | Reviewer example |
 | --- | --- |
-| `panel_VCF_vcf2maf_pipeline` | GRCh37 VCF inspection and normalization |
+| `panel_VCF_vcf2maf_pipeline` | GRCh37 VCF inspection/normalization and restored batch empty-VCF handling |
 | `HGVS_to_minimal_MAF_pipeline` | frozen synthetic Ensembl REST-cache replay |
 | `minimal_MAF_to_annotated_MAF_pipeline` | minimal MAF to per-sample VCF conversion; full annotation is documented separately |
 | `gene_name_harmonization` | GTF/HGNC-backed alias normalization |

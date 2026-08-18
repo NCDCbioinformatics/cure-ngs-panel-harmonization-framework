@@ -58,7 +58,7 @@ and the Python application. It does not contain the large genome resources.
 docker build \
   --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   --file docker/Dockerfile \
-  --tag cure-ngs-harmonizer:0.1.0 .
+  --tag cure-ngs-harmonizer:0.2.0 .
 ```
 
 The core image is smaller and is sufficient for the network-free reviewer
@@ -68,23 +68,23 @@ walkthrough, normalization, table processing, and concordance:
 docker build \
   --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   --file docker/Dockerfile.core \
-  --tag cure-ngs-harmonizer:0.1.0-core .
+  --tag cure-ngs-harmonizer:0.2.0-core .
 ```
 
 Confirm that the image starts and inspect every detected tool:
 
 ```bash
-docker run --rm cure-ngs-harmonizer:0.1.0 versions
-docker run --rm cure-ngs-harmonizer:0.1.0 --help
+docker run --rm cure-ngs-harmonizer:0.2.0 versions
+docker run --rm cure-ngs-harmonizer:0.2.0 --help
 ```
 
 Tagged releases are configured to publish immutable full and core images to
-GitHub Container Registry. After the `0.1.0` release workflow completes, they
+GitHub Container Registry. After the `0.2.0` release workflow completes, they
 can be obtained without a local build:
 
 ```bash
-docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.1.0
-docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.1.0-core
+docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.0
+docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.0-core
 ```
 
 Verify that the package is visible on the repository's Packages page before

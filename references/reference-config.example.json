@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "reference_root": ".",
+  "target_assembly": "GRCh37",
+  "unknown_assembly": "GRCh37",
+  "output_contig_style": "numeric",
+  "assemblies": {
+    "GRCh37": {
+      "fasta_candidates": [
+        {
+          "label": "hg19_genome",
+          "path": "grch37/hg19.fa",
+          "contig_style": "ucsc"
+        },
+        {
+          "label": "GATK_assembly19",
+          "path": "grch37/Homo_sapiens_assembly19.fasta",
+          "contig_style": "numeric"
+        },
+        {
+          "label": "Ensembl_GRCh37_toplevel",
+          "path": "grch37/Homo_sapiens.GRCh37.dna.toplevel.fa",
+          "contig_style": "numeric"
+        }
+      ]
+    }
+  },
+  "liftover": {
+    "GRCh38_to_GRCh37": {
+      "chains": [
+        {
+          "label": "UCSC_hg38ToHg19",
+          "path": "liftover/hg38ToHg19.over.chain.gz",
+          "contig_style": "ucsc",
+          "target_reference_label": "hg19_genome"
+        },
+        {
+          "label": "Ensembl_GRCh38_to_GRCh37",
+          "path": "liftover/GRCh38_to_GRCh37.chain.gz",
+          "contig_style": "numeric",
+          "target_reference_label": "GATK_assembly19"
+        }
+      ]
+    }
+  },
+  "vep": {
+    "data": "vep",
+    "cache_version": 116
+  },
+  "policies": {
+    "allow_all_rejected_empty": false
+  }
+}

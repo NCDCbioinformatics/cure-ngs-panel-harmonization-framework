@@ -3,7 +3,7 @@
 ## Supported revision release
 
 - Project: CURE-NGS Harmonizer
-- Package: `cure-ngs-harmonizer` 0.1.0
+- Package: `cure-ngs-harmonizer` 0.2.0
 - Command: `cure-ngs`
 - Maintainer account: `NCDCbioinformatics`
 - Primary target: Linux; Windows development is supported for platform-neutral
@@ -33,8 +33,9 @@ image recipes are under `docker/`.
 
 ## Verification baseline
 
-- 71 automated tests pass inside the Linux core container.
-- Branch-aware coverage is 79.76%; CI enforces at least 70%.
+- The suite collects 85 tests: 83 platform-independent tests plus two bcftools
+  integration cases exercised by the Linux container job.
+- Branch-aware coverage is 70.40%; CI enforces at least 70%.
 - Synthetic tests include CSV delimiter regression, VCF assembly inference,
   multiallelic splitting, left alignment, REF validation, empty-VCF behavior,
   HGVS/gene/fusion normalization, negative-strand insertion mapping, frozen REST

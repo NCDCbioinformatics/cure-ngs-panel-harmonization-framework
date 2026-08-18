@@ -16,6 +16,7 @@ RUN apt-get update \
         curl \
         libhts3=1.13+ds-2build1 \
         openjdk-17-jre-headless \
+        p7zip-full=16.02+dfsg-8 \
         python3=3.10.6-1~22.04.1 \
         python3-pip=22.0.2+dfsg-1ubuntu0.7 \
         samtools=1.13-4 \
@@ -52,6 +53,7 @@ RUN groupadd --gid 10001 cure-ngs \
 
 COPY src /opt/cure-ngs/src
 COPY resources /opt/cure-ngs/resources
+COPY references/reference-config.example.json /opt/cure-ngs/reference-config.example.json
 
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
@@ -66,7 +68,7 @@ ENV LC_ALL=C.UTF-8 \
 
 LABEL org.opencontainers.image.title="CURE-NGS Harmonizer" \
       org.opencontainers.image.description="Reproducible panel NGS variant harmonization" \
-      org.opencontainers.image.version="0.1.0-vep116.1" \
+      org.opencontainers.image.version="0.2.0-vep116.1" \
       org.opencontainers.image.source="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework" \
       org.opencontainers.image.revision="${SOURCE_REVISION}" \
       org.opencontainers.image.licenses="MIT"

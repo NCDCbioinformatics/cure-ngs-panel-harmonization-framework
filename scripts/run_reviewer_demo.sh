@@ -31,9 +31,9 @@ mkdir -p "$OUTPUT_DIR"
 chmod 0777 "$OUTPUT_DIR"
 
 if [ "${CURE_NGS_SKIP_BUILD:-0}" = "1" ]; then
-  echo "[1/9] Using prebuilt core image $IMAGE"
+  echo "[1/10] Using prebuilt core image $IMAGE"
 else
-  echo "[1/9] Building pinned core image"
+  echo "[1/10] Building pinned core image"
   "$ENGINE" build \
     --file "$ROOT_DIR/docker/Dockerfile.core" \
     --tag "$IMAGE" \
@@ -49,19 +49,19 @@ run_cure_ngs() {
     "$IMAGE" "$@"
 }
 
-echo "[2/9] Checking pinned executables"
+echo "[2/10] Checking pinned executables"
 run_cure_ngs versions >"$OUTPUT_DIR/versions.json"
 run_cure_ngs doctor --profile core >"$OUTPUT_DIR/doctor.json"
 grep -q '"status": "READY"' "$OUTPUT_DIR/doctor.json"
 
-echo "[3/9] Inspecting the public GRCh37 vcf2maf fixture"
+echo "[3/10] Inspecting the public GRCh37 vcf2maf fixture"
 (cd "$ROOT_DIR/examples/public/vcf2maf" && sha256sum --check checksums.sha256)
 run_cure_ngs inspect-vcf \
   /examples/public/vcf2maf/test_b37.vcf --assembly GRCh37 \
   >"$OUTPUT_DIR/public-vcf-inspection.json"
 grep -q '"record_count": 25' "$OUTPUT_DIR/public-vcf-inspection.json"
 
-echo "[4/9] Splitting, left-aligning, and deduplicating a GRCh37 VCF"
+echo "[4/10] Splitting, left-aligning, and deduplicating a GRCh37 VCF"
 run_cure_ngs normalize-vcf \
   /examples/synthetic/normalize.grch37.vcf \
   /data/output/normalized.grch37.vcf \
@@ -69,7 +69,7 @@ run_cure_ngs normalize-vcf \
   --assembly GRCh37
 test "$(grep -vc '^#' "$OUTPUT_DIR/normalized.grch37.vcf")" -eq 4
 
-echo "[5/9] Replaying HGVS-to-minimal-MAF without network access"
+echo "[5/10] Replaying HGVS-to-minimal-MAF without network access"
 run_cure_ngs hgvs-table-to-minimal-maf \
   /examples/synthetic/hgvs_to_minimal_input.tsv \
   /data/output/from-hgvs.grch37.maf \
@@ -81,7 +81,7 @@ run_cure_ngs hgvs-table-to-minimal-maf \
 grep -q $'GENE\tsynthetic_sample_001\tchr1\t10\t10\tC\tT\tGRCh37' \
   "$OUTPUT_DIR/from-hgvs.grch37.maf"
 
-echo "[6/9] Converting minimal MAF to a reference-valid VCF"
+echo "[6/10] Converting minimal MAF to a reference-valid VCF"
 mkdir -p "$OUTPUT_DIR/from-minimal"
 chmod 0777 "$OUTPUT_DIR/from-minimal"
 run_cure_ngs minimal-maf-to-vcf \
@@ -91,7 +91,7 @@ run_cure_ngs minimal-maf-to-vcf \
   --assembly GRCh37
 test "$(grep -vc '^#' "$OUTPUT_DIR/from-minimal/synthetic_sample_001.from_minimal_maf.vcf")" -eq 3
 
-echo "[7/9] Testing gene, fusion, and tabular HGVS normalization"
+echo "[7/10] Testing gene, fusion, and tabular HGVS normalization"
 run_cure_ngs normalize-gene P53 \
   --gtf /examples/synthetic/genes.gtf \
   --hgnc /examples/synthetic/hgnc.tsv >"$OUTPUT_DIR/gene.json"
@@ -105,7 +105,7 @@ run_cure_ngs normalize-hgvs-table \
   /data/output/hgvs.normalized.csv --delimiter comma
 grep -q 'c.818G>A' "$OUTPUT_DIR/hgvs.normalized.csv"
 
-echo "[8/9] Calculating exact cross-route concordance"
+echo "[8/10] Calculating exact cross-route concordance"
 mkdir -p "$OUTPUT_DIR/concordance"
 chmod 0777 "$OUTPUT_DIR/concordance"
 run_cure_ngs compare-maf-routes /data/output/concordance \
@@ -116,5 +116,15 @@ run_cure_ngs compare-maf-routes /data/output/concordance \
 grep -q '"exact_set_agreement_percent": 100.0' \
   "$OUTPUT_DIR/concordance/concordance_summary.json"
 
-echo "[9/9] Reviewer demonstration passed"
+echo "[9/10] Exercising restored V1.3.3 batch handling for an empty panel VCF"
+mkdir -p "$OUTPUT_DIR/batch"
+chmod 0777 "$OUTPUT_DIR/batch"
+run_cure_ngs batch-vcf-to-maf \
+  /examples/synthetic/batch-input /data/output/batch \
+  --reference-config /examples/synthetic/reference-config.reviewer.json \
+  --jobs 1
+grep -q 'VALID_EMPTY' "$OUTPUT_DIR/batch/vcf2maf_batch_summary.json"
+test -s "$OUTPUT_DIR/batch/empty.grch37.maf.manifest.json"
+
+echo "[10/10] Reviewer demonstration passed"
 echo "Results: $OUTPUT_DIR"

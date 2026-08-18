@@ -55,10 +55,10 @@ function Invoke-CureNgs {
     }
 }
 
-Write-Host "[1/8] Building pinned core image"
+Write-Host "[1/9] Building pinned core image"
 Invoke-Checked @("build", "--file", (Join-Path $Root "docker/Dockerfile.core"), "--tag", $Image, $Root)
 
-Write-Host "[2/8] Checking pinned executables"
+Write-Host "[2/9] Checking pinned executables"
 Invoke-CureNgs @("versions") | Set-Content -Encoding utf8 (Join-Path $Output "versions.json")
 Invoke-CureNgs @("doctor", "--profile", "core") |
     Set-Content -Encoding utf8 (Join-Path $Output "doctor.json")
@@ -66,14 +66,14 @@ if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "doctor.json") -P
     throw "Core preflight did not report READY"
 }
 
-Write-Host "[3/8] Inspecting the public GRCh37 vcf2maf fixture"
+Write-Host "[3/9] Inspecting the public GRCh37 vcf2maf fixture"
 Invoke-CureNgs @("inspect-vcf", "/examples/public/vcf2maf/test_b37.vcf", "--assembly", "GRCh37") |
     Set-Content -Encoding utf8 (Join-Path $Output "public-vcf-inspection.json")
 if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "public-vcf-inspection.json") -Pattern '"record_count": 25')) {
     throw "Unexpected public fixture record count"
 }
 
-Write-Host "[4/8] Normalizing a synthetic GRCh37 VCF"
+Write-Host "[4/9] Normalizing a synthetic GRCh37 VCF"
 Invoke-CureNgs @(
     "normalize-vcf", "/examples/synthetic/normalize.grch37.vcf",
     "/data/output/normalized.grch37.vcf", "--reference-fasta",
@@ -82,7 +82,7 @@ Invoke-CureNgs @(
 $Records = (Get-Content (Join-Path $Output "normalized.grch37.vcf") | Where-Object { -not $_.StartsWith("#") }).Count
 if ($Records -ne 4) { throw "Expected four normalized records, observed $Records" }
 
-Write-Host "[5/8] Replaying HGVS conversion and minimal-MAF conversion"
+Write-Host "[5/9] Replaying HGVS conversion and minimal-MAF conversion"
 Invoke-CureNgs @(
     "hgvs-table-to-minimal-maf", "/examples/synthetic/hgvs_to_minimal_input.tsv",
     "/data/output/from-hgvs.grch37.maf", "--failed", "/data/output/from-hgvs.failed.tsv",
@@ -96,7 +96,7 @@ Invoke-CureNgs @(
     "/examples/synthetic/tiny.grch37.fa", "--assembly", "GRCh37"
 )
 
-Write-Host "[6/8] Testing gene, fusion, and HGVS normalization"
+Write-Host "[6/9] Testing gene, fusion, and HGVS normalization"
 Invoke-CureNgs @("normalize-gene", "P53", "--gtf", "/examples/synthetic/genes.gtf", "--hgnc", "/examples/synthetic/hgnc.tsv") |
     Set-Content -Encoding utf8 (Join-Path $Output "gene.json")
 Invoke-CureNgs @("normalize-fusion", "EML4-ALK", "--gtf", "/examples/synthetic/genes.gtf", "--hgnc", "/examples/synthetic/hgnc.tsv") |
@@ -106,7 +106,7 @@ Invoke-CureNgs @(
     "/data/output/hgvs.normalized.csv", "--delimiter", "comma"
 )
 
-Write-Host "[7/8] Calculating exact cross-route concordance"
+Write-Host "[7/9] Calculating exact cross-route concordance"
 New-Item -ItemType Directory -Force -Path (Join-Path $Output "concordance") | Out-Null
 Invoke-CureNgs @(
     "compare-maf-routes", "/data/output/concordance",
@@ -119,5 +119,16 @@ if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "concordance\conc
     throw "Synthetic concordance did not reach 100%"
 }
 
-Write-Host "[8/8] Reviewer demonstration passed"
+Write-Host "[8/9] Exercising restored V1.3.3 empty-VCF batch handling"
+New-Item -ItemType Directory -Force -Path (Join-Path $Output "batch") | Out-Null
+Invoke-CureNgs @(
+    "batch-vcf-to-maf", "/examples/synthetic/batch-input", "/data/output/batch",
+    "--reference-config", "/examples/synthetic/reference-config.reviewer.json",
+    "--jobs", "1"
+)
+if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "batch\vcf2maf_batch_summary.json") -Pattern 'VALID_EMPTY')) {
+    throw "Batch empty-VCF test did not report VALID_EMPTY"
+}
+
+Write-Host "[9/9] Reviewer demonstration passed"
 Write-Host "Results: $Output"

@@ -10,6 +10,8 @@ large-resource end-to-end annotation run.
 3. Run `bash scripts/run_reviewer_demo.sh` or the PowerShell equivalent.
 4. Confirm the final `Reviewer demonstration passed` message.
 5. Inspect `reviewer-output/<run-id>/versions.json` and `doctor.json`.
+6. Inspect `reviewer-output/<run-id>/batch/vcf2maf_batch_summary.json` and its
+   per-file manifest.
 
 This run uses only original synthetic fixtures plus one attributed public
 vcf2maf VCF. Container networking is disabled. It tests all six component
@@ -38,6 +40,14 @@ container/cache pair and manifest therefore define the reproducible result.
 - gene alias `P53`: resolves to `TP53`
 - fusion `EML4-ALK`: resolves directionally to `EML4--ALK`
 - cross-route synthetic concordance: 100% exact set agreement
+- restored V1.3.3 batch route: one empty GRCh37 VCF is reported as
+  `VALID_EMPTY`, with a deterministic MAF and provenance manifest
+
+The empty fixture tests batch discovery, assembly handling, sample-tag
+derivation, empty-input behavior, reporting, and manifest generation without a
+multi-gigabyte reference download. The full heterogeneous batch route and its
+external reference-bundle layout are documented in
+[`V1.3.3_BATCH_WORKFLOW.md`](V1.3.3_BATCH_WORKFLOW.md).
 
 ## Reporting a reproducibility problem
 

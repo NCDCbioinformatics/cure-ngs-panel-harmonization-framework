@@ -18,7 +18,7 @@ Panel-Based NGS in Precision Oncology."
 
 It provides one stable project home page for:
 
-- the supported `cure-ngs-harmonizer` 0.1.0 command-line package
+- the supported `cure-ngs-harmonizer` 0.2.0 command-line package
 - digest- and version-pinned core and full Docker images
 - synthetic fixtures, automated tests, and continuous integration
 - aggregate technical-validation results and their figure-generation script
@@ -46,7 +46,7 @@ environments.
 
 | Repository | Responsibility in CURE-NGS | Supported unified entry point | Latest audited component release |
 | --- | --- | --- | --- |
-| **[cure-ngs-panel-harmonization-framework](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework)** | Canonical project home, unified CLI, Docker/OCI images, tests, reviewer data, validation, and manuscript metadata | `cure-ngs` / `scripts/run_reviewer_demo.sh` | Consolidated release `0.1.0` |
+| **[cure-ngs-panel-harmonization-framework](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework)** | Canonical project home, unified CLI, Docker/OCI images, tests, reviewer data, validation, and manuscript metadata | `cure-ngs` / `scripts/run_reviewer_demo.sh` | Consolidated release `0.2.0` |
 | [panel_VCF_vcf2maf_pipeline](https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline) | VCF sanitation, assembly handling, and VCF-to-MAF conversion | `cure-ngs normalize-vcf` and `cure-ngs vcf-to-maf` | `NCDC_batch_vcf2maf_V.1.3.3_github` |
 | [HGVS_to_minimal_MAF_pipeline](https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline) | Structured/report-derived HGVS to minimal MAF | `cure-ngs hgvs-table-to-minimal-maf` | `minimal_maf_vep_hg38tohg19_V.1.0.3` |
 | [minimal_MAF_to_annotated_MAF_pipeline](https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline) | Minimal MAF conversion and re-annotation | `cure-ngs minimal-maf-to-vcf` and `cure-ngs annotate-vcf` | `minimal_maf_to_vep_maf_V.1.0.2` |
@@ -84,16 +84,16 @@ for a commit or pull request:
 ```bash
 git clone https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework.git
 cd cure-ngs-panel-harmonization-framework
-docker build --file docker/Dockerfile.core --tag cure-ngs-harmonizer:0.1.0-core .
-docker build --file docker/Dockerfile --tag cure-ngs-harmonizer:0.1.0 .
+docker build --file docker/Dockerfile.core --tag cure-ngs-harmonizer:0.2.0-core .
+docker build --file docker/Dockerfile --tag cure-ngs-harmonizer:0.2.0 .
 ```
 
-After release `0.1.0` is published and the repository **Packages** panel lists
+After release `0.2.0` is published and the repository **Packages** panel lists
 the images, the equivalent prebuilt images can be downloaded instead:
 
 ```bash
-docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.1.0-core
-docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.1.0
+docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.0-core
+docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.0
 ```
 
 Always verify that the package exists before relying on `docker pull`. If
@@ -103,14 +103,47 @@ until the release workflow has completed.
 ### 3. Verify the installation
 
 ```bash
-docker run --rm cure-ngs-harmonizer:0.1.0 versions
-docker run --rm cure-ngs-harmonizer:0.1.0 doctor --profile core
+docker run --rm cure-ngs-harmonizer:0.2.0 versions
+docker run --rm cure-ngs-harmonizer:0.2.0 doctor --profile core
 bash scripts/run_reviewer_demo.sh
 ```
 
 The core reviewer test needs no human reference download. Full VCF-to-MAF
 annotation requires a separately mounted GRCh37 FASTA and release-matched VEP
 116 cache; follow [Reference and annotation data](docs/REFERENCE_DATA.md).
+
+### Restored NCDC V1.3.3 batch conversion
+
+Release 0.2.0 restores the operational behavior of
+`NCDC_batch_vcf2maf_V.1.3.3` as a portable command. Large FASTAs, VEP caches,
+and liftover chains stay outside the image and are mounted read-only. Their
+relative paths, ordered FASTA fallback, and ordered chain fallback are declared
+in `references/reference-config.json` instead of being hard-coded for one
+workstation.
+
+```bash
+cp references/reference-config.example.json references/reference-config.json
+
+docker run --rm \
+  --volume "$PWD/references:/references:ro" \
+  cure-ngs-harmonizer:0.2.0 doctor-bundle \
+  --reference-config /references/reference-config.json
+
+docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
+  --volume "$PWD/input:/data/input:ro" \
+  --volume "$PWD/output:/data/output" \
+  --volume "$PWD/references:/references:ro" \
+  cure-ngs-harmonizer:0.2.0 batch-vcf-to-maf \
+  /data/input /data/output \
+  --reference-config /references/reference-config.json --jobs 4
+```
+
+GRCh37 is the default target. GRCh38 inputs are detected and lifted with the
+configured chain candidates; GRCh37 inputs bypass liftover. The batch command
+also restores gVCF filtering, legacy GINS/header repair, empty-VCF handling,
+eight-character sample tags, parallel jobs, per-file manifests, and a TSV/JSON
+batch report. See the
+[V1.3.3 batch workflow guide](docs/V1.3.3_BATCH_WORKFLOW.md).
 
 ## Reviewer Quick Start
 
@@ -139,6 +172,7 @@ Start here for a clean installation:
 - [Installation and deployment](docs/INSTALLATION.md)
 - [Reference genome, VEP cache, chain, GTF, and HGNC setup](docs/REFERENCE_DATA.md)
 - [Commands and end-to-end workflows](docs/COMMAND_REFERENCE.md)
+- [Restored NCDC V1.3.3 batch workflow](docs/V1.3.3_BATCH_WORKFLOW.md)
 - [Reviewer reproduction checklist](docs/REVIEWER_REPRODUCTION.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
@@ -171,9 +205,10 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The Linux core container passed all 71 tests with 79.76% branch-aware coverage. Native
-Windows runs 69 platform-independent tests and skips the two tests that require
-`bcftools`; both skipped tests pass in the Linux container.
+The current suite collects 85 tests: 83 platform-independent tests pass with
+70.40% branch-aware coverage, and two bcftools integration cases are exercised
+by the Linux container job. The reviewer walkthrough separately runs the six
+component routes under hardened container settings.
 
 Inspect a synthetic VCF and report all inferred properties:
 
@@ -196,10 +231,10 @@ Build the full VEP/vcf2maf image:
 
 ```bash
 docker build --file docker/Dockerfile \
-  --tag cure-ngs-harmonizer:0.1.0 .
+  --tag cure-ngs-harmonizer:0.2.0 .
 docker run --rm --read-only --tmpfs /tmp:size=64m \
   --security-opt no-new-privileges:true \
-  cure-ngs-harmonizer:0.1.0 versions
+  cure-ngs-harmonizer:0.2.0 versions
 ```
 
 The image runs as non-root UID/GID 10001. It pins Python 3.10.12, bcftools 1.13,
@@ -220,7 +255,7 @@ Check the mounted environment before analysis:
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.1.0 doctor \
+  cure-ngs-harmonizer:0.2.0 doctor \
   --profile vcf-to-maf --assembly GRCh37 \
   --reference-fasta /references/grch37/hg19.fa \
   --vep-data /references/vep --cache-version 116

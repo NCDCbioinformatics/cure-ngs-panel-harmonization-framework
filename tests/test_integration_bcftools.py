@@ -16,6 +16,9 @@ FIXTURES = Path(__file__).parent / "fixtures" / "synthetic"
 def test_bcftools_splits_left_aligns_and_deduplicates(tmp_path: Path) -> None:
     reference = tmp_path / "reference.fa"
     reference.write_bytes((FIXTURES / "tiny.grch38.fa").read_bytes())
+    Path(f"{reference}.fai").write_bytes(
+        (FIXTURES / "tiny.grch38.fa.fai").read_bytes()
+    )
     output = tmp_path / "normalized.vcf"
 
     run = normalize_vcf(
@@ -30,9 +33,11 @@ def test_bcftools_splits_left_aligns_and_deduplicates(tmp_path: Path) -> None:
         if line and not line.startswith("#")
     ]
 
-    assert run.commands[0][:2] == ("bcftools", "norm")
+    assert run.commands[0][:2] == ("bcftools", "reheader")
     assert run.commands[1][:2] == ("bcftools", "view")
     assert run.commands[2][:2] == ("bcftools", "norm")
+    assert run.commands[3][:2] == ("bcftools", "view")
+    assert run.commands[4][:2] == ("bcftools", "norm")
     assert run.tool_version.startswith("bcftools ")
     assert result.record_count == 4
     assert result.multiallelic_record_count == 0

@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "release-baseline-0.1.0",
+  "status": "release-baseline-0.2.0",
   "tools": {
     "bcftools": {
       "version": "1.13",
@@ -9,6 +9,10 @@
     "samtools": {
       "version": "1.13",
       "package": "samtools=1.13-4"
+    },
+    "p7zip-full": {
+      "version": "16.02+dfsg-8",
+      "package": "p7zip-full=16.02+dfsg-8"
     },
     "python": {
       "version": "3.10.12",

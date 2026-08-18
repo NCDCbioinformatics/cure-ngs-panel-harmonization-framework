@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import __version__
 from .annotation import annotate_vcf
+from .batch import batch_vcf_to_maf
 from .concordance import compare_maf_routes
 from .fusion import normalize_fusion
 from .gene import GeneCatalog
@@ -18,6 +19,7 @@ from .maf import minimal_maf_to_vcfs
 from .models import Assembly
 from .preflight import check_environment
 from .provenance import write_manifest
+from .reference_bundle import inspect_reference_bundle, load_reference_bundle
 from .resources import verify_profile_resources
 from .runtime import runtime_versions
 from .table_io import normalize_hgvs_table
@@ -85,6 +87,13 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--java", default="java")
     doctor.add_argument("--picard-jar")
     doctor.add_argument("--vcf2maf")
+
+    bundle_doctor = subparsers.add_parser(
+        "doctor-bundle",
+        help="Validate every FASTA, index, chain, and VEP cache in a reference bundle",
+    )
+    bundle_doctor.add_argument("--reference-config", required=True)
+    bundle_doctor.add_argument("--reference-root")
 
     inspect = subparsers.add_parser("inspect-vcf", help="Inspect VCF structure")
     inspect.add_argument("input")
@@ -258,6 +267,30 @@ def build_parser() -> argparse.ArgumentParser:
     workflow.add_argument("--work-directory")
     workflow.add_argument("--manifest")
 
+    batch_workflow = subparsers.add_parser(
+        "batch-vcf-to-maf",
+        help=(
+            "Run the restored NCDC V1.3.3 batch workflow with portable "
+            "reference and liftover fallback configuration"
+        ),
+    )
+    batch_workflow.add_argument("input_directory")
+    batch_workflow.add_argument("output_directory")
+    batch_workflow.add_argument("--reference-config", required=True)
+    batch_workflow.add_argument("--reference-root")
+    batch_workflow.add_argument("--source-assembly", type=_assembly)
+    batch_workflow.add_argument("--target-assembly", type=_assembly)
+    batch_workflow.add_argument("--jobs", type=int, default=4)
+    batch_workflow.add_argument("--sample-tag-length", type=int, default=8)
+    batch_workflow.add_argument("--picard-jar")
+    batch_workflow.add_argument("--java", default="java")
+    batch_workflow.add_argument("--bcftools", default="bcftools")
+    batch_workflow.add_argument("--vcf2maf")
+    batch_workflow.add_argument("--vep-path")
+    batch_workflow.add_argument("--forks", type=int, default=1)
+    batch_workflow.add_argument("--work-directory")
+    batch_workflow.add_argument("--overwrite", action="store_true")
+
     concordance = subparsers.add_parser(
         "compare-maf-routes",
         help="Calculate sample-aware exact concordance between two MAF routes",
@@ -321,6 +354,14 @@ def main(argv: list[str] | None = None) -> int:
                 picard_jar=args.picard_jar,
                 vcf2maf=args.vcf2maf,
             )
+            print(json.dumps(report, indent=2, ensure_ascii=False))
+            return 0 if report["status"] == "READY" else 2
+
+        if args.command == "doctor-bundle":
+            bundle = load_reference_bundle(
+                args.reference_config, reference_root=args.reference_root
+            )
+            report = inspect_reference_bundle(bundle)
             print(json.dumps(report, indent=2, ensure_ascii=False))
             return 0 if report["status"] == "READY" else 2
 
@@ -675,6 +716,30 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
             return 0
+
+        if args.command == "batch-vcf-to-maf":
+            bundle = load_reference_bundle(
+                args.reference_config, reference_root=args.reference_root
+            )
+            result = batch_vcf_to_maf(
+                args.input_directory,
+                args.output_directory,
+                bundle=bundle,
+                target_assembly=args.target_assembly,
+                source_assembly=args.source_assembly,
+                jobs=args.jobs,
+                sample_tag_length=args.sample_tag_length,
+                picard_jar=args.picard_jar,
+                java=args.java,
+                bcftools=args.bcftools,
+                vcf2maf_path=args.vcf2maf,
+                vep_path=args.vep_path,
+                forks=args.forks,
+                work_directory=args.work_directory,
+                overwrite=args.overwrite,
+            )
+            print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+            return 0 if result.failed == 0 else 2
 
         if args.command == "compare-maf-routes":
             result = compare_maf_routes(
