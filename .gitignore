@@ -12,6 +12,7 @@ __pycache__/
 htmlcov/
 ci-output/
 reviewer-output/
+tutorial-output/
 workspace/output/*
 !workspace/output/.gitkeep
 build/

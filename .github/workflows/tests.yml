@@ -106,8 +106,8 @@ jobs:
               "allele_records_before_normalization"
           ] == 3
           PY
-      - name: Run the complete six-component reviewer walkthrough
+      - name: Run the complete beginner six-component walkthrough
         env:
           CURE_NGS_IMAGE: cure-ngs:test
-          CURE_NGS_SKIP_BUILD: "1"
-        run: bash scripts/run_reviewer_demo.sh
+          CURE_NGS_SKIP_PULL: "1"
+        run: bash scripts/run_beginner_tutorial.sh

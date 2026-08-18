@@ -15,7 +15,9 @@ else
 fi
 IMAGE="${CURE_NGS_IMAGE:-cure-ngs-harmonizer:reviewer-core}"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
-OUTPUT_DIR="$ROOT_DIR/reviewer-output/$RUN_ID"
+OUTPUT_ROOT="${CURE_NGS_OUTPUT_ROOT:-$ROOT_DIR/reviewer-output}"
+OUTPUT_DIR="$OUTPUT_ROOT/$RUN_ID"
+COMPLETION_MESSAGE="${CURE_NGS_COMPLETION_MESSAGE:-Reviewer demonstration passed}"
 
 command -v "$ENGINE" >/dev/null 2>&1 || {
   echo "ERROR: container engine not found: $ENGINE" >&2
@@ -49,13 +51,25 @@ run_cure_ngs() {
     "$IMAGE" "$@"
 }
 
+verify_sha256() {
+  local checksum_file="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum --check "$checksum_file"
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum --algorithm 256 --check "$checksum_file"
+  else
+    echo "ERROR: sha256sum or shasum is required." >&2
+    exit 2
+  fi
+}
+
 echo "[2/10] Checking pinned executables"
 run_cure_ngs versions >"$OUTPUT_DIR/versions.json"
 run_cure_ngs doctor --profile core >"$OUTPUT_DIR/doctor.json"
 grep -q '"status": "READY"' "$OUTPUT_DIR/doctor.json"
 
 echo "[3/10] Inspecting the public GRCh37 vcf2maf fixture"
-(cd "$ROOT_DIR/examples/public/vcf2maf" && sha256sum --check checksums.sha256)
+(cd "$ROOT_DIR/examples/public/vcf2maf" && verify_sha256 checksums.sha256)
 run_cure_ngs inspect-vcf \
   /examples/public/vcf2maf/test_b37.vcf --assembly GRCh37 \
   >"$OUTPUT_DIR/public-vcf-inspection.json"
@@ -126,5 +140,5 @@ run_cure_ngs batch-vcf-to-maf \
 grep -q 'VALID_EMPTY' "$OUTPUT_DIR/batch/vcf2maf_batch_summary.json"
 test -s "$OUTPUT_DIR/batch/empty.grch37.maf.manifest.json"
 
-echo "[10/10] Reviewer demonstration passed"
+echo "[10/10] $COMPLETION_MESSAGE"
 echo "Results: $OUTPUT_DIR"

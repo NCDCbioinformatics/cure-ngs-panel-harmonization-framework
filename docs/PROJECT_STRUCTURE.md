@@ -67,12 +67,15 @@ to record the exact resources used.
 ## Reviewer workflow
 
 1. Clone only the canonical umbrella repository.
-2. Run `bash scripts/run_reviewer_demo.sh` or the PowerShell equivalent.
-3. Inspect `versions.json`, `doctor.json`, generated manifests, and concordance
-   outputs under `reviewer-output/`.
-4. For a full VEP/vcf2maf run, install the external GRCh37 FASTA and matching
+2. New users follow `docs/BEGINNER_TUTORIAL.md` or run
+   `bash scripts/run_beginner_tutorial.sh`.
+3. Reviewers can additionally run `bash scripts/run_reviewer_demo.sh` to build
+   the image directly from the checked-out source.
+4. Inspect `versions.json`, `doctor.json`, generated manifests, and concordance
+   outputs under `tutorial-output/` or `reviewer-output/`.
+5. For a full VEP/vcf2maf run, install the external GRCh37 FASTA and matching
    VEP 116 cache described in `docs/REFERENCE_DATA.md`.
-5. Cite the umbrella release or immutable commit SHA. Use the six component
+6. Cite the umbrella release or immutable commit SHA. Use the six component
    release identities only as implementation provenance.
 
 Detailed commands are in `docs/COMMAND_REFERENCE.md`; the complete independent
