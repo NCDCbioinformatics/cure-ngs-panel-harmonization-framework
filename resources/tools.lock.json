@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "release-baseline-0.2.0",
+  "status": "release-baseline-0.2.1",
   "tools": {
     "bcftools": {
       "version": "1.13",

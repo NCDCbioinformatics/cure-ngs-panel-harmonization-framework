@@ -19,7 +19,11 @@ from .maf import minimal_maf_to_vcfs
 from .models import Assembly
 from .preflight import check_environment
 from .provenance import write_manifest
-from .reference_bundle import inspect_reference_bundle, load_reference_bundle
+from .reference_bundle import (
+    inspect_reference_bundle,
+    load_reference_bundle,
+    write_reference_config_template,
+)
 from .resources import verify_profile_resources
 from .runtime import runtime_versions
 from .table_io import normalize_hgvs_table
@@ -94,6 +98,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bundle_doctor.add_argument("--reference-config", required=True)
     bundle_doctor.add_argument("--reference-root")
+    bundle_doctor.add_argument("--vep", default="vep")
+
+    bundle_init = subparsers.add_parser(
+        "init-reference-config",
+        help="Create a multi-reference config for a user-selected reference root",
+    )
+    bundle_init.add_argument("output")
+    bundle_init.add_argument(
+        "--reference-root",
+        required=True,
+        help=(
+            "Root visible to cure-ngs (normally /references in Docker); "
+            "candidate paths in the generated config are relative to this root"
+        ),
+    )
+    bundle_init.add_argument("--cache-version", type=int, default=116)
+    bundle_init.add_argument("--force", action="store_true")
 
     inspect = subparsers.add_parser("inspect-vcf", help="Inspect VCF structure")
     inspect.add_argument("input")
@@ -361,9 +382,43 @@ def main(argv: list[str] | None = None) -> int:
             bundle = load_reference_bundle(
                 args.reference_config, reference_root=args.reference_root
             )
-            report = inspect_reference_bundle(bundle)
+            runtime = runtime_versions(vep=args.vep)
+            vep_runtime = runtime.get("vep")
+            report = inspect_reference_bundle(
+                bundle,
+                runtime_vep=(
+                    vep_runtime if isinstance(vep_runtime, dict) else None
+                ),
+            )
             print(json.dumps(report, indent=2, ensure_ascii=False))
             return 0 if report["status"] == "READY" else 2
+
+        if args.command == "init-reference-config":
+            output = write_reference_config_template(
+                args.output,
+                reference_root=args.reference_root,
+                cache_version=args.cache_version,
+                force=args.force,
+            )
+            print(
+                json.dumps(
+                    {
+                        "status": "CREATED",
+                        "config": str(output),
+                        "reference_root": args.reference_root,
+                        "next_steps": [
+                            "Edit candidate paths or arrange files under the root",
+                            (
+                                "cure-ngs doctor-bundle --reference-config "
+                                f"{output} --reference-root {args.reference_root}"
+                            ),
+                        ],
+                    },
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 0
 
         if args.command == "inspect-vcf":
             result = inspect_vcf(

@@ -23,9 +23,9 @@ Build and smoke test with Docker or Podman:
 
 ```bash
 docker build --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
-  -f docker/Dockerfile -t cure-ngs-harmonizer:0.2.0 .
-docker run --rm cure-ngs-harmonizer:0.2.0 versions
-docker run --rm cure-ngs-harmonizer:0.2.0 doctor --profile core
+  -f docker/Dockerfile -t cure-ngs-harmonizer:0.2.1 .
+docker run --rm cure-ngs-harmonizer:0.2.1 versions
+docker run --rm cure-ngs-harmonizer:0.2.1 doctor --profile core
 ```
 
 `SOURCE_REVISION` is stored in the OCI `org.opencontainers.image.revision`
@@ -37,7 +37,7 @@ The table normalizers are included in the same non-root image. For example:
 docker run --rm \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
-  cure-ngs-harmonizer:0.2.0 \
+  cure-ngs-harmonizer:0.2.1 \
   normalize-hgvs-table /data/input/report.csv /data/output/report.normalized.csv \
   --delimiter comma
 ```
@@ -49,7 +49,7 @@ docker run --rm \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.0 \
+  cure-ngs-harmonizer:0.2.1 \
   normalize-vcf /data/input/sample.vcf /data/output/sample.normalized.vcf.gz \
   --reference-fasta /references/hg19.fa --assembly GRCh37
 ```
@@ -61,7 +61,7 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.0 batch-vcf-to-maf \
+  cure-ngs-harmonizer:0.2.1 batch-vcf-to-maf \
   /data/input /data/output \
   --reference-config /references/reference-config.json --jobs 4
 ```

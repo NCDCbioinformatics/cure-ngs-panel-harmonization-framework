@@ -12,7 +12,7 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.0 COMMAND OPTIONS
+  cure-ngs-harmonizer:0.2.1 COMMAND OPTIONS
 ```
 
 All paths passed to `COMMAND` are container paths, not host paths. Replace the
@@ -25,13 +25,25 @@ V1.3.3 batch entry point. The reference config controls ordered FASTA and chain
 fallbacks while GRCh37 remains the default target:
 
 ```bash
+cure-ngs init-reference-config reference-config.json \
+  --reference-root /references --cache-version 116
+
 cure-ngs doctor-bundle \
-  --reference-config /references/reference-config.json
+  --reference-config reference-config.json \
+  --reference-root /references
 
 cure-ngs batch-vcf-to-maf /data/input /data/output \
-  --reference-config /references/reference-config.json \
+  --reference-config reference-config.json \
+  --reference-root /references \
   --jobs 4 --sample-tag-length 8
 ```
+
+`init-reference-config` records the reference root selected by the user and
+creates the standard three-FASTA/two-chain candidate layout without
+overwriting an existing config. Edit the relative candidate paths when an
+institution uses a different layout. In Docker, select the host directory with
+the left side of `--volume HOST_DIRECTORY:/references:ro`; `/references` is the
+corresponding in-container root.
 
 This writes one MAF and manifest per input plus
 `vcf2maf_batch_log.tsv` and `vcf2maf_batch_summary.json`. It supports legacy
