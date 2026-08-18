@@ -8,7 +8,9 @@ $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Examples = Join-Path $Root "examples"
 $RunId = "{0}-{1}" -f (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ"), $PID
-$Output = Join-Path $Root (Join-Path "reviewer-output" $RunId)
+$OutputRoot = if ($env:CURE_NGS_OUTPUT_ROOT) { $env:CURE_NGS_OUTPUT_ROOT } else { Join-Path $Root "reviewer-output" }
+$Output = Join-Path $OutputRoot $RunId
+$CompletionMessage = if ($env:CURE_NGS_COMPLETION_MESSAGE) { $env:CURE_NGS_COMPLETION_MESSAGE } else { "Reviewer demonstration passed" }
 
 if (-not $Engine) {
     foreach ($Candidate in @("docker", "podman")) {
@@ -55,8 +57,12 @@ function Invoke-CureNgs {
     }
 }
 
-Write-Host "[1/9] Building pinned core image"
-Invoke-Checked @("build", "--file", (Join-Path $Root "docker/Dockerfile.core"), "--tag", $Image, $Root)
+if ($env:CURE_NGS_SKIP_BUILD -eq "1") {
+    Write-Host "[1/9] Using prebuilt core image $Image"
+} else {
+    Write-Host "[1/9] Building pinned core image"
+    Invoke-Checked @("build", "--file", (Join-Path $Root "docker/Dockerfile.core"), "--tag", $Image, $Root)
+}
 
 Write-Host "[2/9] Checking pinned executables"
 Invoke-CureNgs @("versions") | Set-Content -Encoding utf8 (Join-Path $Output "versions.json")
@@ -130,5 +136,5 @@ if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "batch\vcf2maf_ba
     throw "Batch empty-VCF test did not report VALID_EMPTY"
 }
 
-Write-Host "[9/9] Reviewer demonstration passed"
+Write-Host "[9/9] $CompletionMessage"
 Write-Host "Results: $Output"

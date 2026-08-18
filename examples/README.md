@@ -11,7 +11,15 @@ This directory contains two complementary, non-clinical test sets.
    pinned vcf2maf revision. Its upstream source and Apache-2.0 terms are recorded
    next to the file.
 
-Run the automated container walkthrough from the repository root:
+First-time users should start with the fully explained tutorial:
+
+```bash
+bash scripts/run_beginner_tutorial.sh
+```
+
+See [`docs/BEGINNER_TUTORIAL.md`](../docs/BEGINNER_TUTORIAL.md) for every input,
+command, expected result, output file, and the optional full VEP annotation
+stage. The shorter reviewer verification entry point is:
 
 ```bash
 bash scripts/run_reviewer_demo.sh
@@ -23,11 +31,12 @@ On Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/run_reviewer_demo.ps1
 ```
 
-The scripts build the smaller core image, run deterministic examples, and
-write disposable results under `reviewer-output/`. No external reference
-download and no network access are required. Full VEP/vcf2maf validation is a
-separate step because the official human FASTA and VEP cache are several
-gigabytes; see `docs/REFERENCE_DATA.md`.
+The beginner launcher pulls the released core image and writes results under
+`tutorial-output/`; the reviewer script builds a core image from the checked-out
+source and writes under `reviewer-output/`. No external reference download and
+no network access inside the example containers are required. Full
+VEP/vcf2maf validation is a separate step because the official human FASTA and
+VEP cache are several gigabytes; see `docs/REFERENCE_DATA.md`.
 
 ## Component coverage
 

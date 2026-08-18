@@ -167,6 +167,27 @@ eight-character sample tags, parallel jobs, per-file manifests, and a TSV/JSON
 batch report. See the
 [V1.3.3 batch workflow guide](docs/V1.3.3_BATCH_WORKFLOW.md).
 
+## First-time user tutorial
+
+New users can download the public core image and exercise the functions mapped
+from all six historical components with the repository's non-clinical examples:
+
+```bash
+git clone https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework.git
+cd cure-ngs-panel-harmonization-framework
+bash scripts/run_beginner_tutorial.sh
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_beginner_tutorial.ps1
+```
+
+The one-command run requires no human reference genome or VEP cache. The
+[beginner tutorial](docs/BEGINNER_TUTORIAL.md) explains every input, command,
+expected result, output file, and the optional full GRCh37/VEP annotation step.
+
 ## Reviewer Quick Start
 
 A reviewer can verify the software without installing Python, VEP, or a human
@@ -191,6 +212,7 @@ final message: `Reviewer demonstration passed`.
 
 Start here for a clean installation:
 
+- [Beginner six-component tutorial](docs/BEGINNER_TUTORIAL.md)
 - [Installation and deployment](docs/INSTALLATION.md)
 - [Reference genome, VEP cache, chain, GTF, and HGNC setup](docs/REFERENCE_DATA.md)
 - [Commands and end-to-end workflows](docs/COMMAND_REFERENCE.md)
@@ -227,10 +249,9 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The current suite collects 85 tests: 83 platform-independent tests pass with
-70.40% branch-aware coverage, and two bcftools integration cases are exercised
-by the Linux container job. The reviewer walkthrough separately runs the six
-component routes under hardened container settings.
+The current suite collects 88 tests and exceeds the required 70% branch-aware
+coverage floor. The Linux container job separately runs the complete beginner
+six-component walkthrough under hardened container settings.
 
 Inspect a synthetic VCF and report all inferred properties:
 

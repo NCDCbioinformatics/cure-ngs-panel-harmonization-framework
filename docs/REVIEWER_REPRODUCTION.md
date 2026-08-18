@@ -3,6 +3,10 @@
 This checklist separates a fast software-verification run from the optional
 large-resource end-to-end annotation run.
 
+Readers using the framework for the first time should begin with the
+[six-component beginner tutorial](BEGINNER_TUTORIAL.md), which explains the
+same public and synthetic examples command by command.
+
 ## A. Deterministic software test
 
 1. Clone the repository and record `git rev-parse HEAD`.
