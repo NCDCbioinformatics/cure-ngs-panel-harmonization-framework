@@ -141,4 +141,5 @@ grep -q 'VALID_EMPTY' "$OUTPUT_DIR/batch/vcf2maf_batch_summary.json"
 test -s "$OUTPUT_DIR/batch/empty.grch37.maf.manifest.json"
 
 echo "[10/10] $COMPLETION_MESSAGE"
-echo "Results: $OUTPUT_DIR"
+echo "Container /data/output was saved to the local host directory below."
+echo "Local results (host): $OUTPUT_DIR"

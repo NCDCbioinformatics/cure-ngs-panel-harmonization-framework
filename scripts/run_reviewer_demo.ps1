@@ -137,4 +137,5 @@ if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "batch\vcf2maf_ba
 }
 
 Write-Host "[9/9] $CompletionMessage"
-Write-Host "Results: $Output"
+Write-Host "Container /data/output was saved to the local host directory below."
+Write-Host "Local results (host): $Output"

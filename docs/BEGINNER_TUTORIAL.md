@@ -68,6 +68,20 @@ Success ends with:
 
 ```text
 Beginner six-component tutorial passed
+Local results (host): /.../cure-ngs-panel-harmonization-framework/tutorial-output/<run-id>
+```
+
+That printed path is an ordinary local folder, not a location trapped inside
+Docker. List it from the repository root:
+
+```bash
+ls -lah tutorial-output/
+```
+
+On WSL, open the same local folder in Windows Explorer with:
+
+```bash
+explorer.exe "$(wslpath -w "$PWD/tutorial-output")"
 ```
 
 The rest of this page expands the same workflow command by command.
@@ -95,8 +109,28 @@ cure_ngs() {
 }
 ```
 
-`/examples` is read-only. `/data/output` is the only persistent writable
-location, and `--network none` proves that the deterministic tutorial does not
+**Nothing has been analyzed yet.** The block only defines a reusable shell
+function, similar to a temporary shortcut. Seeing the continuation prompt `>`
+while entering the block and then getting the normal `$` prompt after `}` is
+expected. Confirm the function and run one real command:
+
+```bash
+type cure_ngs
+echo "Local output directory: $OUTPUT_DIR"
+cure_ngs --version
+```
+
+The expected version is `0.2.1`. The bind mounts mean:
+
+| Docker path | Local host path | Purpose |
+| --- | --- | --- |
+| `/examples` | `$REPO/examples` | read-only inputs committed to GitHub |
+| `/data/output` | `$OUTPUT_DIR` | persistent results on the user's computer |
+
+Therefore, when a command writes `/data/output/result.maf` inside the
+container, the user receives `$OUTPUT_DIR/result.maf` locally. The container is
+removed after each command, but files in the bind-mounted output directory
+remain. `--network none` proves that the deterministic tutorial does not
 silently call an external service.
 
 Check the pinned programs:
