@@ -5,7 +5,6 @@
 <p align="center">
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/repo-health.yml"><img alt="Repository Health" src="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/repo-health.yml/badge.svg"></a>
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/tests.yml"><img alt="Automated Tests" src="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/tests.yml/badge.svg"></a>
-  <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/public-images.yml"><img alt="Public Image Verification" src="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/public-images.yml/badge.svg"></a>
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/link-check.yml"><img alt="Link Check" src="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/link-check.yml/badge.svg"></a>
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-0f766e.svg"></a>
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/blob/main/docs/MANUSCRIPT_DECLARATIONS.md"><img alt="Editorial Metadata" src="https://img.shields.io/badge/Editorial-Metadata_ready-1d4ed8.svg"></a>
