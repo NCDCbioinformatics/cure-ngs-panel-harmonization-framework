@@ -1,0 +1,28 @@
+name: Public Image Verification
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  clean-public-install:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Verify anonymous core/full pulls and six-component tutorial
+        run: bash scripts/verify_public_install.sh
+
+      - name: Upload tutorial outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-image-tutorial-output
+          path: tutorial-output
+          if-no-files-found: warn
