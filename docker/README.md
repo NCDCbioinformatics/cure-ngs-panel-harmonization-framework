@@ -19,6 +19,22 @@ template at `/opt/cure-ngs/reference-config.example.json`.
 `docker/Dockerfile.core` is a smaller image for fast preprocessing tests without
 VEP, Picard, or vcf2maf.
 
+Pull the public release images without registry login and retain their complete
+GHCR names:
+
+```bash
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+docker pull "$CORE_IMAGE"
+docker pull "$FULL_IMAGE"
+docker run --rm "$CORE_IMAGE" doctor --profile core
+docker run --rm "$FULL_IMAGE" versions
+```
+
+The short local name `cure-ngs-harmonizer:0.2.1` is used below only for an
+image built from source with that tag. It is not an alias automatically created
+by `docker pull ghcr.io/ncdcbioinformatics/...`.
+
 Build and smoke test with Docker or Podman:
 
 ```bash

@@ -37,6 +37,56 @@ docker version
 docker run --rm hello-world
 ```
 
+### Clean Ubuntu 22.04 or 24.04
+
+The following commands implement Docker's official apt-repository installation
+on a newly installed Ubuntu host. Run them in Ubuntu, not in Windows
+PowerShell:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl git
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt-get update
+sudo apt-get install -y \
+  docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+sudo docker run --rm hello-world
+```
+
+Docker works through `sudo` at this point. To run this repository's scripts as
+the current user, optionally add that user to the Docker group, then start a
+new group session:
+
+```bash
+sudo usermod -aG docker "$USER"
+newgrp docker
+docker info
+```
+
+Membership in the Docker group grants root-level host privileges. On a managed
+institutional server, ask the administrator whether `sudo`, rootless Docker,
+or Podman is the approved method instead.
+
+WSL 2 is a different case. If Docker Desktop provides the daemon, enable WSL
+integration for the Ubuntu distribution and do not install a second daemon
+inside it. If Docker Engine was intentionally installed inside WSL and systemd
+is disabled, use `sudo service docker start`. In either case, do not continue
+until both `docker info` and `docker run --rm hello-world` succeed.
+
 ## 2. Obtain a reproducible source revision
 
 ```bash
@@ -55,41 +105,57 @@ The full image contains VEP, vcf2maf, Picard, bcftools, SAMtools, Perl, Java,
 and the Python application. It does not contain the large genome resources.
 
 ```bash
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
 docker build \
   --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   --file docker/Dockerfile \
-  --tag cure-ngs-harmonizer:0.2.1 .
+  --tag "$FULL_IMAGE" .
 ```
 
 The core image is smaller and is sufficient for the network-free reviewer
 walkthrough, normalization, table processing, and concordance:
 
 ```bash
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
 docker build \
   --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   --file docker/Dockerfile.core \
-  --tag cure-ngs-harmonizer:0.2.1-core .
+  --tag "$CORE_IMAGE" .
 ```
 
 Confirm that the image starts and inspect every detected tool:
 
 ```bash
-docker run --rm cure-ngs-harmonizer:0.2.1 versions
-docker run --rm cure-ngs-harmonizer:0.2.1 --help
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+docker run --rm "$FULL_IMAGE" versions
+docker run --rm "$FULL_IMAGE" --help
 ```
 
 Tagged releases publish immutable full and core images to GitHub Container
 Registry. They can be obtained without a local build:
 
 ```bash
-docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
-docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+docker pull "$CORE_IMAGE"
+docker pull "$FULL_IMAGE"
+docker run --rm "$CORE_IMAGE" --version
+docker run --rm "$FULL_IMAGE" versions
 ```
 
-Verify that the package is visible on the repository's Packages page before
-using these pull commands. A `No packages published` message means that the
-release workflow has not published the images yet; build from the tagged source
-instead.
+These public images do not require `docker login`. Keep the complete
+`ghcr.io/ncdcbioinformatics/...` name in subsequent `docker run` commands; the
+short name `cure-ngs-harmonizer:0.2.1` is a separate local/Docker Hub name.
+
+Run the public-install validator to pull both images, inspect their repository
+digests and dependency versions, run the core preflight, and execute the entire
+six-component tutorial:
+
+```bash
+bash scripts/verify_public_install.sh
+```
+
+Expected final message: `CURE-NGS public installation verified`.
 
 ## 4. Reviewer test without large downloads
 
@@ -143,10 +209,18 @@ Native installation is intended for developers and platform-neutral commands,
 not as the primary reproducible deployment route:
 
 ```bash
+sudo apt-get install -y python3-venv
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip==25.0.1
 python -m pip install --require-hashes --requirement requirements-runtime.txt
+python -m pip install --requirement requirements-test.txt
 python -m pip install --no-deps --editable .
 cure-ngs --help
+python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
 Supported Python versions are 3.10 through 3.12. External tools remain the
-user's responsibility outside the container.
+user's responsibility outside the container. Ubuntu 22.04's original pip
+22.0.2 cannot perform this project's PEP 660 editable install, which is why the
+explicit pip upgrade is required.

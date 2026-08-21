@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/repo-health.yml"><img alt="Repository Health" src="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/repo-health.yml/badge.svg"></a>
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/tests.yml"><img alt="Automated Tests" src="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/tests.yml/badge.svg"></a>
+  <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/public-images.yml"><img alt="Public Image Verification" src="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/public-images.yml/badge.svg"></a>
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/link-check.yml"><img alt="Link Check" src="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/workflows/link-check.yml/badge.svg"></a>
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-0f766e.svg"></a>
   <a href="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/blob/main/docs/MANUSCRIPT_DECLARATIONS.md"><img alt="Editorial Metadata" src="https://img.shields.io/badge/Editorial-Metadata_ready-1d4ed8.svg"></a>
@@ -69,6 +70,10 @@ for the ownership, integration, versioning, and reviewer workflow in detail.
 - Linux: install [Docker Engine](https://docs.docker.com/engine/install/).
 - Podman is also supported; replace `docker` with `podman` in the commands.
 
+For an otherwise empty Ubuntu 22.04 or 24.04 machine, follow the exact
+[clean-Ubuntu installation procedure](docs/INSTALLATION.md#clean-ubuntu-2204-or-2404)
+before continuing.
+
 Confirm that the engine is running:
 
 ```bash
@@ -84,28 +89,38 @@ for a commit or pull request:
 ```bash
 git clone https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework.git
 cd cure-ngs-panel-harmonization-framework
-docker build --file docker/Dockerfile.core --tag cure-ngs-harmonizer:0.2.1-core .
-docker build --file docker/Dockerfile --tag cure-ngs-harmonizer:0.2.1 .
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+docker build --file docker/Dockerfile.core --tag "$CORE_IMAGE" .
+docker build --file docker/Dockerfile --tag "$FULL_IMAGE" .
 ```
 
 The release images can be downloaded without building locally:
 
 ```bash
-docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
-docker pull ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+docker pull "$CORE_IMAGE"
+docker pull "$FULL_IMAGE"
 ```
 
-Always verify that the package exists before relying on `docker pull`. If
-GitHub still displays `No packages published`, use the source-build route above
-until the release workflow has completed.
+Both images are public and do not require `docker login`. Their published tags
+and digests are visible on the
+[GitHub Packages page](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/pkgs/container/cure-ngs-harmonizer).
 
 ### 3. Verify the installation
 
 ```bash
-docker run --rm cure-ngs-harmonizer:0.2.1 versions
-docker run --rm cure-ngs-harmonizer:0.2.1 doctor --profile core
-bash scripts/run_reviewer_demo.sh
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+docker run --rm "$FULL_IMAGE" versions
+docker run --rm "$CORE_IMAGE" doctor --profile core
+bash scripts/verify_public_install.sh
 ```
+
+Keep the complete `ghcr.io/ncdcbioinformatics/...` image name when running a
+downloaded image. A short name such as `cure-ngs-harmonizer:0.2.1` is a
+different local tag and may make Docker query Docker Hub instead of GHCR.
 
 The core reviewer test needs no human reference download. Full VCF-to-MAF
 annotation requires a separately mounted GRCh37 FASTA and release-matched VEP
@@ -133,18 +148,19 @@ is the stable path seen by CURE-NGS:
 
 ```bash
 REFERENCE_DIR=/path/to/your/reference-store
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
 mkdir -p config
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/config:/config" \
-  cure-ngs-harmonizer:0.2.1 init-reference-config \
+  "$FULL_IMAGE" init-reference-config \
   /config/reference-config.json --reference-root /references
 
 # Edit config/reference-config.json if the files use different relative paths.
 docker run --rm \
   --volume "$REFERENCE_DIR:/references:ro" \
   --volume "$PWD/config:/config:ro" \
-  cure-ngs-harmonizer:0.2.1 doctor-bundle \
+  "$FULL_IMAGE" doctor-bundle \
   --reference-config /config/reference-config.json \
   --reference-root /references \
   | tee reference-bundle.preflight.json
@@ -154,7 +170,7 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/output:/data/output" \
   --volume "$REFERENCE_DIR:/references:ro" \
   --volume "$PWD/config:/config:ro" \
-  cure-ngs-harmonizer:0.2.1 batch-vcf-to-maf \
+  "$FULL_IMAGE" batch-vcf-to-maf \
   /data/input /data/output \
   --reference-config /config/reference-config.json \
   --reference-root /references --jobs 4
@@ -218,6 +234,7 @@ Start here for a clean installation:
 - [Commands and end-to-end workflows](docs/COMMAND_REFERENCE.md)
 - [Restored NCDC V1.3.3 batch workflow](docs/V1.3.3_BATCH_WORKFLOW.md)
 - [Reviewer reproduction checklist](docs/REVIEWER_REPRODUCTION.md)
+- [Clean Ubuntu validation record](docs/CLEAN_UBUNTU_VALIDATION.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ## Framework Map
@@ -243,6 +260,7 @@ The Python package supports Python 3.10–3.12. Development installation and the
 complete test suite are:
 
 ```bash
+python -m pip install --upgrade pip==25.0.1
 python -m pip install --requirement requirements-runtime.txt
 python -m pip install --requirement requirements-test.txt
 python -m pip install --no-deps --editable .
@@ -296,9 +314,10 @@ layouts are provided in [the reference-data guide](docs/REFERENCE_DATA.md).
 Check the mounted environment before analysis:
 
 ```bash
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.1 doctor \
+  "$FULL_IMAGE" doctor \
   --profile vcf-to-maf --assembly GRCh37 \
   --reference-fasta /references/grch37/hg19.fa \
   --vep-data /references/vep --cache-version 116

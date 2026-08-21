@@ -12,7 +12,7 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.1 COMMAND OPTIONS
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1 COMMAND OPTIONS
 ```
 
 All paths passed to `COMMAND` are container paths, not host paths. Replace the

@@ -4,6 +4,51 @@ Run `cure-ngs doctor` before investigating a long workflow failure. Its JSON
 output is suitable for attaching to a GitHub issue together with `cure-ngs
 versions` and the input VCF header with sensitive fields removed.
 
+## Docker cannot connect to its socket
+
+First run `docker info`. If the client section appears but the server cannot be
+reached, CURE-NGS has not started yet and image commands cannot work. On native
+Ubuntu with systemd:
+
+```bash
+sudo systemctl enable --now docker
+docker info
+```
+
+For Docker Engine installed inside WSL without systemd, use `sudo service
+docker start`. If Docker Desktop supplies the WSL daemon, enable integration
+for that distribution instead of starting a second daemon. A path such as
+`~/.docker/run/docker.sock` in the error may also indicate a stale context or
+`DOCKER_HOST`; inspect `docker context ls`, use the intended context, and unset
+an incorrect `DOCKER_HOST`.
+
+## GHCR pull is denied or the image cannot be found
+
+Release 0.2.1 is public; `docker login ghcr.io` is not required. Use the exact,
+lowercase, fully qualified name:
+
+```bash
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+docker pull "$CORE_IMAGE"
+docker pull "$FULL_IMAGE"
+```
+
+Do not pull the GHCR name and then run only
+`cure-ngs-harmonizer:0.2.1`; that short name can make Docker query Docker Hub.
+Run `bash scripts/verify_public_install.sh` to test both public images and the
+complete tutorial. If the exact commands still fail, save the output of
+`docker info`, `docker context ls`, and `docker pull "$CORE_IMAGE"` for the
+GitHub issue. Do not include credentials or access tokens.
+
+## Pull fails with a network, TLS, or DNS error
+
+The initial download needs outbound HTTPS access to `ghcr.io` and its backing
+blob-storage endpoints. Test the same command from an unrestricted network or
+ask the institutional proxy/firewall administrator to allow those endpoints.
+Registry authentication does not fix a DNS timeout, certificate error, or
+blocked HTTPS connection.
+
 ## Permission denied under `/data/output`
 
 The image runs without root privileges. On Linux, make the bind-mounted output

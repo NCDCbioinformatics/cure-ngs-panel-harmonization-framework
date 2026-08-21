@@ -33,12 +33,14 @@ jobs:
           test -f docs/SOFTWARE_INVENTORY.md
           test -f docs/INSTALLATION.md
           test -f docs/BEGINNER_TUTORIAL.md
+          test -f docs/CLEAN_UBUNTU_VALIDATION.md
           test -f docs/PROJECT_STRUCTURE.md
           test -f docs/REFERENCE_DATA.md
           test -f docs/COMMAND_REFERENCE.md
           test -f docs/REVIEWER_REPRODUCTION.md
           test -f scripts/run_reviewer_demo.sh
           test -f scripts/run_beginner_tutorial.sh
+          test -f scripts/verify_public_install.sh
           test -f scripts/run_beginner_tutorial.ps1
           test -f examples/public/vcf2maf/test_b37.vcf
           test -f data/README.md
@@ -52,3 +54,6 @@ jobs:
           grep -q "Data Availability declaration" docs/MANUSCRIPT_DECLARATIONS.md
           grep -q "Competing Interest declaration" docs/MANUSCRIPT_DECLARATIONS.md
           grep -q "Beginner six-component tutorial passed" scripts/run_beginner_tutorial.sh
+          grep -q "CURE-NGS public installation verified" scripts/verify_public_install.sh
+          bash -n scripts/run_beginner_tutorial.sh
+          bash -n scripts/verify_public_install.sh
