@@ -2,3 +2,6 @@
 *.ps1 text eol=crlf
 *.png binary
 *.xlsx binary
+examples/component-tests/LICENSE.MSKCC-vcf2maf.Apache-2.0 binary
+examples/component-tests/inputs/* binary
+examples/component-tests/expected/* binary
