@@ -4,6 +4,37 @@ Run `cure-ngs doctor` before investigating a long workflow failure. Its JSON
 output is suitable for attaching to a GitHub issue together with `cure-ngs
 versions` and the input VCF header with sensitive fields removed.
 
+## Permission denied for `/var/run/docker.sock`
+
+An error such as `permission denied while trying to connect to the Docker
+daemon socket at unix:///var/run/docker.sock` occurs before Docker contacts
+GHCR. It is a host-user permission problem, not a CURE-NGS image, registry
+login, or image-tag failure.
+
+First confirm that the daemon works with administrator access, then grant the
+current Linux/WSL user non-root Docker access:
+
+```bash
+sudo docker info
+sudo groupadd -f docker
+sudo usermod -aG docker "$USER"
+newgrp docker
+id -nG
+ls -l /var/run/docker.sock
+docker info
+```
+
+`id -nG` must contain `docker`; the socket is normally owned by `root:docker`;
+and the final `docker info` must show a Server section without `sudo`. On WSL,
+if the terminal retains the old group list, close all WSL terminals, run
+`wsl --shutdown` in Windows PowerShell, reopen Ubuntu, and repeat `docker
+info`.
+
+Do not use `chmod 777 /var/run/docker.sock`: it grants every local user control
+of a root-equivalent daemon and is reset when Docker recreates the socket.
+Membership in the `docker` group is itself root-equivalent; on a managed server
+use the institution's approved `sudo`, rootless Docker, or Podman policy.
+
 ## Docker cannot connect to its socket
 
 First run `docker info`. If the client section appears but the server cannot be

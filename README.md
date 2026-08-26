@@ -80,6 +80,24 @@ docker version
 docker run --rm hello-world
 ```
 
+If either command reports `permission denied while trying to connect to the
+Docker daemon socket at unix:///var/run/docker.sock`, Docker is running but the
+current Linux/WSL user cannot access it. Configure non-root access once, then
+open a new group session:
+
+```bash
+sudo groupadd -f docker
+sudo usermod -aG docker "$USER"
+newgrp docker
+docker info
+```
+
+On WSL, if the old group membership remains after reopening Ubuntu, run
+`wsl --shutdown` once in **Windows PowerShell**, reopen Ubuntu, and retry
+`docker info`. Do not use `chmod 777 /var/run/docker.sock`. See
+[Docker socket troubleshooting](docs/TROUBLESHOOTING.md#permission-denied-for-varrundockersock)
+for diagnosis and institutional-security considerations.
+
 ### 2. Obtain CURE-NGS
 
 The source-build route is available immediately and is the reproducible option
