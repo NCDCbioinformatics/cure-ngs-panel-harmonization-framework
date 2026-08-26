@@ -12,7 +12,7 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2 COMMAND OPTIONS
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3 COMMAND OPTIONS
 ```
 
 All paths passed to `COMMAND` are container paths, not host paths. Replace the
@@ -28,12 +28,12 @@ their SHA-256 manifest:
 mkdir -p output
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/output:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core \
   verify-tutorial-data
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/output:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core \
   export-tutorial-data /data/output/component-test-data
 ```
 
@@ -55,7 +55,7 @@ cure-ngs doctor-bundle \
   --reference-config reference-config.json \
   --reference-root /references
 
-cure-ngs batch-vcf-to-maf /data/input /data/output \
+cure-ngs batch-vcf-to-maf --workspace-root /data/KOSMOS_VCF \
   --reference-config reference-config.json \
   --reference-root /references \
   --jobs 4 --sample-tag-length 8
@@ -68,8 +68,12 @@ institution uses a different layout. In Docker, select the host directory with
 the left side of `--volume HOST_DIRECTORY:/references:ro`; `/references` is the
 corresponding in-container root.
 
-This writes one MAF and manifest per input plus
-`vcf2maf_batch_log.tsv` and `vcf2maf_batch_summary.json`. It supports legacy
+`--workspace-root` creates/uses `VCF_ALL`, `VCF_ALL_LOG`, `VCF_ALL_MAF`, and
+`VCF_ALL_TMP`. It writes MAFs only to `VCF_ALL_MAF`, the exact nine-column
+V1.3.3/manuscript TSV plus JSON summary to `VCF_ALL_LOG`, manifests to
+`VCF_ALL_LOG/manifests`, and processing artifacts to `VCF_ALL_TMP`. The older
+explicit `input_directory output_directory` form remains supported for generic
+automation. The batch command supports legacy
 GINS-column repair, missing sample headers, gVCF filtering, assembly detection,
 GRCh38-to-GRCh37 liftover fallback, multiple GRCh37 FASTA candidates, empty
 VCFs, missing vendor-tag declarations, numeric database-facing chromosome

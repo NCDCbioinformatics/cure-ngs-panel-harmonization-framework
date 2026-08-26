@@ -60,6 +60,8 @@ run_cure_ngs verify-tutorial-data >"$OUTPUT_DIR/component-test-data.verification
 grep -q '"file_count": 11' "$OUTPUT_DIR/component-test-data.verification.json"
 run_cure_ngs export-tutorial-data /data/output/component-test-data \
   >"$OUTPUT_DIR/component-test-data.export.json"
+run_cure_ngs export-v1.3.3-example /data/output/KOSMOS_VCF \
+  >"$OUTPUT_DIR/KOSMOS_VCF.reference-export.json"
 
 echo "[4/11] Inspecting the non-empty public GRCh37 VCF and reference MAF"
 run_cure_ngs inspect-vcf \
@@ -70,6 +72,10 @@ VCF_RECORDS="$(grep -vc '^#' "$OUTPUT_DIR/component-test-data/inputs/test_b37.vc
 MAF_ROWS="$(grep -v '^#' "$OUTPUT_DIR/component-test-data/expected/test_b37.maf" | tail -n +2 | wc -l | tr -d ' ')"
 test "$VCF_RECORDS" -eq 25
 test "$MAF_ROWS" -eq 25
+test "$(grep -vc '^#' "$OUTPUT_DIR/KOSMOS_VCF/VCF_ALL/test_b37.vcf")" -eq 25
+test "$(grep -v '^#' "$OUTPUT_DIR/KOSMOS_VCF/VCF_ALL_MAF/test_b37.maf" | tail -n +2 | wc -l | tr -d ' ')" -eq 25
+test -s "$OUTPUT_DIR/KOSMOS_VCF/VCF_ALL_LOG/vcf2maf_batch_log.tsv"
+test -d "$OUTPUT_DIR/KOSMOS_VCF/VCF_ALL_TMP"
 
 echo "[5/11] Splitting, left-aligning, and deduplicating a GRCh37 VCF"
 run_cure_ngs normalize-vcf \
@@ -127,15 +133,23 @@ run_cure_ngs compare-maf-routes /data/output/concordance \
 grep -q '"exact_set_agreement_percent": 100.0' \
   "$OUTPUT_DIR/concordance/concordance_summary.json"
 
-echo "[10/11] Separately testing the V1.3.3 valid-empty-VCF edge case"
-mkdir -p "$OUTPUT_DIR/batch-empty-edge-case"
-chmod 0777 "$OUTPUT_DIR/batch-empty-edge-case"
+echo "[10/11] Executing the V1.3.3 four-directory workspace contract"
+mkdir -p "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL"
+cp "$ROOT_DIR/examples/synthetic/batch-input/empty.grch37.vcf" \
+  "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL/"
+chmod -R 0777 "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST"
 run_cure_ngs batch-vcf-to-maf \
-  /opt/cure-ngs/examples/synthetic/batch-input /data/output/batch-empty-edge-case \
+  --workspace-root /data/output/KOSMOS_VCF_RUNTIME_TEST \
   --reference-config /opt/cure-ngs/examples/synthetic/reference-config.reviewer.json \
   --jobs 1
-grep -q 'VALID_EMPTY' "$OUTPUT_DIR/batch-empty-edge-case/vcf2maf_batch_summary.json"
-test -s "$OUTPUT_DIR/batch-empty-edge-case/empty.grch37.maf.manifest.json"
+grep -q 'NCDC_batch_vcf2maf_V.1.3.3' \
+  "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL_LOG/vcf2maf_batch_summary.json"
+grep -q $'status\tmessage\tfinal_vcf' \
+  "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL_LOG/vcf2maf_batch_log.tsv"
+grep -q $'SUCCESS\tVCF has no variants; created empty MAF header' \
+  "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL_LOG/vcf2maf_batch_log.tsv"
+test -s "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL_MAF/empty.grch37.maf"
+test -s "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL_LOG/manifests/empty.grch37.maf.manifest.json"
 
 printf 'component\toriginal_input_rows\treference_output_rows\tquick_test\n' >"$OUTPUT_DIR/component-test-summary.tsv"
 printf 'panel_VCF_vcf2maf_pipeline\t25\t25\tnon-empty VCF inspected; full MAF included\n' >>"$OUTPUT_DIR/component-test-summary.tsv"
@@ -149,3 +163,5 @@ echo "[11/11] $COMPLETION_MESSAGE"
 echo "Container /data/output was saved to the local host directory below."
 echo "Local results (host): $OUTPUT_DIR"
 echo "Non-empty VCF reference MAF: $OUTPUT_DIR/component-test-data/expected/test_b37.maf"
+echo "Paper/V1.3.3 folder example: $OUTPUT_DIR/KOSMOS_VCF"
+echo "Executed V1.3.3 runtime tree: $OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST"

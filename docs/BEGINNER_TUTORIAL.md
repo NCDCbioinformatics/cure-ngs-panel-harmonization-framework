@@ -63,7 +63,7 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/run_beginner_tutorial.ps1
 ```
 
-The launcher downloads the public `0.2.2-core` image, runs all six component
+The launcher downloads the public `0.2.3-core` image, runs all six component
 groups without container network access, checks every expected result, and
 writes outputs to a new timestamped directory under `tutorial-output/`.
 Success ends with:
@@ -93,7 +93,7 @@ The rest of this page expands the same workflow command by command.
 The following section uses a Bash shell. Start in the cloned repository:
 
 ```bash
-IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
+IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core
 REPO="$PWD"
 OUTPUT_DIR="$REPO/tutorial-output/manual"
 
@@ -121,7 +121,7 @@ echo "Local output directory: $OUTPUT_DIR"
 cure_ngs --version
 ```
 
-The expected version is `0.2.2`. The bind mount means:
+The expected version is `0.2.3`. The bind mount means:
 
 | Docker path | Local host path | Purpose |
 | --- | --- | --- |
@@ -137,6 +137,8 @@ cure_ngs verify-tutorial-data \
   | tee "$OUTPUT_DIR/component-test-data.verification.json"
 cure_ngs export-tutorial-data /data/output/component-test-data \
   | tee "$OUTPUT_DIR/component-test-data.export.json"
+cure_ngs export-v1.3.3-example /data/output/KOSMOS_VCF \
+  | tee "$OUTPUT_DIR/KOSMOS_VCF.reference-export.json"
 ```
 
 The local directory `$OUTPUT_DIR/component-test-data/` now contains the five
@@ -144,6 +146,26 @@ files linked in the review response, the minimal-MAF fixture for the sixth
 component, and three non-empty historical reference outputs. SHA-256 values,
 source URLs, row counts, and privacy notes are in its `manifest.json` and
 `README.md`.
+
+The second export creates the exact top-level layout shown in the manuscript
+and used by `NCDC_batch_vcf2maf_V.1.3.3_github`:
+
+```text
+$OUTPUT_DIR/KOSMOS_VCF/
+|-- VCF_ALL/
+|   `-- test_b37.vcf
+|-- VCF_ALL_LOG/
+|   |-- vcf2maf_batch_log.tsv
+|   `-- reference-output.json
+|-- VCF_ALL_MAF/
+|   `-- test_b37.maf
+`-- VCF_ALL_TMP/
+```
+
+`test_b37.vcf` has 25 records and `test_b37.maf` has 25 data rows. The
+`REFERENCE_OUTPUT` status and `reference-output.json` make clear that this MAF
+is the validated bundled historical result; the export command does not claim
+to have rerun VEP. Section 13 shows the real annotation command.
 
 Therefore, when a command writes `/data/output/result.maf` inside the
 container, the user receives `$OUTPUT_DIR/result.maf` locally. The container is
@@ -203,19 +225,23 @@ The last command must print `4`. The adjacent
 versions, and the exact output.
 
 The restored V1.3.3 batch entry point also treats a valid empty panel VCF as an
-auditable negative result. This is a separate edge-case test and is not the
-main MAF example:
+auditable negative result. This separate runtime test proves that Docker itself
+creates the four directories, places the MAF only in `VCF_ALL_MAF`, writes the
+nine-column legacy-compatible log to `VCF_ALL_LOG`, keeps manifests under the
+log directory, and reserves `VCF_ALL_TMP` for processed/temporary files:
 
 ```bash
-mkdir -p "$OUTPUT_DIR/batch-empty-edge-case"
+mkdir -p "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL"
+cp examples/synthetic/batch-input/empty.grch37.vcf \
+  "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL/"
 cure_ngs batch-vcf-to-maf \
-  /opt/cure-ngs/examples/synthetic/batch-input \
-  /data/output/batch-empty-edge-case \
+  --workspace-root /data/output/KOSMOS_VCF_RUNTIME_TEST \
   --reference-config /opt/cure-ngs/examples/synthetic/reference-config.reviewer.json \
   --jobs 1
 
-grep 'VALID_EMPTY' \
-  "$OUTPUT_DIR/batch-empty-edge-case/vcf2maf_batch_summary.json"
+find "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST" -maxdepth 3 -type f -print
+grep $'SUCCESS\tVCF has no variants; created empty MAF header' \
+  "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL_LOG/vcf2maf_batch_log.tsv"
 ```
 
 ## 6. Component 2: HGVS table to minimal MAF
@@ -346,6 +372,19 @@ tutorial-output/manual/
 |       |-- minimal_maf_test_normalized.xlsx
 |       `-- minimal_maf_from_hgvs_vep_V2.vcf2maf.maf
 |-- component-test-summary.tsv
+|-- KOSMOS_VCF/
+|   |-- VCF_ALL/test_b37.vcf
+|   |-- VCF_ALL_LOG/vcf2maf_batch_log.tsv
+|   |-- VCF_ALL_MAF/test_b37.maf
+|   `-- VCF_ALL_TMP/
+|-- KOSMOS_VCF_RUNTIME_TEST/
+|   |-- VCF_ALL/empty.grch37.vcf
+|   |-- VCF_ALL_LOG/
+|   |   |-- vcf2maf_batch_log.tsv
+|   |   |-- vcf2maf_batch_summary.json
+|   |   `-- manifests/empty.grch37.maf.manifest.json
+|   |-- VCF_ALL_MAF/empty.grch37.maf
+|   `-- VCF_ALL_TMP/.cure-ngs-work/
 |-- public-vcf-inspection.json
 |-- normalized.grch37.vcf
 |-- normalized.grch37.vcf.manifest.json
@@ -357,9 +396,6 @@ tutorial-output/manual/
 |-- fusion.json
 |-- hgvs_to_minimal_maf_test.current.normalized.xlsx
 |-- hgvs_to_minimal_maf_test.current.normalized.xlsx.manifest.json
-|-- batch-empty-edge-case/
-|   |-- vcf2maf_batch_summary.json
-|   `-- empty.grch37.maf.manifest.json
 `-- concordance/
     |-- concordance_summary.json
     |-- concordance_by_sample.tsv
@@ -378,7 +414,7 @@ the optional GRCh38-to-GRCh37 chains.
 Select the external directory and require a successful content-aware preflight:
 
 ```bash
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3
 REFERENCE_DIR=/path/to/your/reference-store
 CONFIG_DIR="$REPO/config"
 
@@ -412,26 +448,31 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --tumor-id synthetic_sample_001
 ```
 
-The same verified resources can annotate the 25-record public VCF end to end:
+The same verified resources can annotate the 25-record public VCF end to end
+while producing the exact manuscript/V1.3.3 directory structure:
 
 ```bash
+mkdir -p "$OUTPUT_DIR/KOSMOS_VCF_FULL_RUN/VCF_ALL"
+cp "$OUTPUT_DIR/component-test-data/inputs/test_b37.vcf" \
+  "$OUTPUT_DIR/KOSMOS_VCF_FULL_RUN/VCF_ALL/"
+
 docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --user "$(id -u):$(id -g)" \
   --volume "$REFERENCE_DIR:/references:ro" \
+  --volume "$CONFIG_DIR:/config:ro" \
   --volume "$OUTPUT_DIR:/data/output" \
-  "$FULL_IMAGE" vcf-to-maf \
-  /opt/cure-ngs/examples/component-tests/inputs/test_b37.vcf \
-  /data/output/public-test-b37.maf \
-  --source-assembly GRCh37 \
-  --source-reference /references/grch37/hg19.fa \
-  --target-assembly GRCh37 \
-  --cache-version 116 \
-  --vep-data /references/vep \
-  --vcf-tumor-id TUMOR --tumor-id tutorial-tumor \
-  --vcf-normal-id NORMAL --normal-id tutorial-normal
+  "$FULL_IMAGE" batch-vcf-to-maf \
+  --workspace-root /data/output/KOSMOS_VCF_FULL_RUN \
+  --reference-config /config/reference-config.json \
+  --reference-root /references --jobs 1
+
+find "$OUTPUT_DIR/KOSMOS_VCF_FULL_RUN" -maxdepth 3 -type f -print
 ```
 
-Retain the resulting MAF, manifest, and preflight JSON together. If VEP 116 is
+The MAF is written to `VCF_ALL_MAF/test_b37.maf`; the legacy-compatible TSV and
+JSON summary are written to `VCF_ALL_LOG`; vcf2maf/VEP temporary VCF and
+stdout/stderr files are written to `VCF_ALL_TMP`. Retain the MAF, manifests,
+preflight JSON, and logs together. If VEP 116 is
 paired with a VEP 102 cache, `doctor-bundle` intentionally reports
 `NOT_READY`; do not bypass that compatibility failure.
 

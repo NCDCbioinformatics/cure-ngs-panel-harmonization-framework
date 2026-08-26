@@ -78,6 +78,8 @@ if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "component-test-d
 }
 Invoke-CureNgs @("export-tutorial-data", "/data/output/component-test-data") |
     Set-Content -Encoding utf8 (Join-Path $Output "component-test-data.export.json")
+Invoke-CureNgs @("export-v1.3.3-example", "/data/output/KOSMOS_VCF") |
+    Set-Content -Encoding utf8 (Join-Path $Output "KOSMOS_VCF.reference-export.json")
 
 Write-Host "[4/11] Inspecting the non-empty public GRCh37 VCF and reference MAF"
 Invoke-CureNgs @("inspect-vcf", "/opt/cure-ngs/examples/component-tests/inputs/test_b37.vcf", "--assembly", "GRCh37") |
@@ -89,6 +91,11 @@ $VcfRecords = @(Get-Content (Join-Path $Output "component-test-data\inputs\test_
 $MafLines = @(Get-Content (Join-Path $Output "component-test-data\expected\test_b37.maf") | Where-Object { $_ -and -not $_.StartsWith("#") }).Count
 if ($VcfRecords -ne 25 -or ($MafLines - 1) -ne 25) {
     throw "The non-empty VCF/MAF pair must contain 25 variants"
+}
+$PaperVcfRecords = @(Get-Content (Join-Path $Output "KOSMOS_VCF\VCF_ALL\test_b37.vcf") | Where-Object { -not $_.StartsWith("#") }).Count
+$PaperMafLines = @(Get-Content (Join-Path $Output "KOSMOS_VCF\VCF_ALL_MAF\test_b37.maf") | Where-Object { $_ -and -not $_.StartsWith("#") }).Count
+if ($PaperVcfRecords -ne 25 -or ($PaperMafLines - 1) -ne 25) {
+    throw "The paper-layout VCF/MAF pair must contain 25 variants"
 }
 
 Write-Host "[5/11] Normalizing a synthetic GRCh37 VCF"
@@ -148,15 +155,21 @@ if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "concordance\conc
     throw "Synthetic concordance did not reach 100%"
 }
 
-Write-Host "[10/11] Separately testing the V1.3.3 valid-empty-VCF edge case"
-New-Item -ItemType Directory -Force -Path (Join-Path $Output "batch-empty-edge-case") | Out-Null
+Write-Host "[10/11] Executing the V1.3.3 four-directory workspace contract"
+$RuntimeRoot = Join-Path $Output "KOSMOS_VCF_RUNTIME_TEST"
+$RuntimeInput = Join-Path $RuntimeRoot "VCF_ALL"
+New-Item -ItemType Directory -Force -Path $RuntimeInput | Out-Null
+Copy-Item -LiteralPath (Join-Path $Root "examples\synthetic\batch-input\empty.grch37.vcf") -Destination $RuntimeInput -Force
 Invoke-CureNgs @(
-    "batch-vcf-to-maf", "/opt/cure-ngs/examples/synthetic/batch-input", "/data/output/batch-empty-edge-case",
+    "batch-vcf-to-maf", "--workspace-root", "/data/output/KOSMOS_VCF_RUNTIME_TEST",
     "--reference-config", "/opt/cure-ngs/examples/synthetic/reference-config.reviewer.json",
     "--jobs", "1"
 )
-if (-not (Select-String -Quiet -LiteralPath (Join-Path $Output "batch-empty-edge-case\vcf2maf_batch_summary.json") -Pattern 'VALID_EMPTY')) {
-    throw "Batch empty-VCF test did not report VALID_EMPTY"
+if (-not (Select-String -Quiet -LiteralPath (Join-Path $RuntimeRoot "VCF_ALL_LOG\vcf2maf_batch_summary.json") -Pattern 'NCDC_batch_vcf2maf_V.1.3.3')) {
+    throw "Batch test did not report the V1.3.3 workspace layout"
+}
+if (-not (Select-String -Quiet -LiteralPath (Join-Path $RuntimeRoot "VCF_ALL_LOG\vcf2maf_batch_log.tsv") -Pattern "SUCCESS`tVCF has no variants; created empty MAF header")) {
+    throw "V1.3.3 compatibility log was not generated"
 }
 
 @(
@@ -173,3 +186,5 @@ Write-Host "[11/11] $CompletionMessage"
 Write-Host "Container /data/output was saved to the local host directory below."
 Write-Host "Local results (host): $Output"
 Write-Host "Non-empty VCF reference MAF: $(Join-Path $Output 'component-test-data\expected\test_b37.maf')"
+Write-Host "Paper/V1.3.3 folder example: $(Join-Path $Output 'KOSMOS_VCF')"
+Write-Host "Executed V1.3.3 runtime tree: $RuntimeRoot"

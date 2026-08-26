@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import Lock
 from typing import BinaryIO, Iterable, TextIO
 
 from .annotation import AnnotationRun, annotate_vcf
@@ -66,6 +67,70 @@ _LOG_FIELDS = (
     "output_maf",
     "manifest",
 )
+_V133_LOG_FIELDS = (
+    "datetime",
+    "vcf_path",
+    "sample_tag8",
+    "ref_info",
+    "is_gvcf",
+    "has_normal",
+    "status",
+    "message",
+    "final_vcf",
+)
+_SAMPLE_LOCKS_GUARD = Lock()
+_SAMPLE_LOCKS: dict[tuple[str, str], Lock] = {}
+
+
+def _sample_lock(directory: Path, sample_tag: str) -> Lock:
+    key = (str(directory.resolve()), sample_tag)
+    with _SAMPLE_LOCKS_GUARD:
+        return _SAMPLE_LOCKS.setdefault(key, Lock())
+
+
+@dataclass(frozen=True)
+class V133Workspace:
+    """Filesystem contract used by NCDC_batch_vcf2maf_V.1.3.3."""
+
+    root: Path
+    input_directory: Path
+    log_directory: Path
+    maf_directory: Path
+    temporary_directory: Path
+    manifest_directory: Path
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "root": str(self.root.resolve()),
+            "VCF_ALL": str(self.input_directory.resolve()),
+            "VCF_ALL_LOG": str(self.log_directory.resolve()),
+            "VCF_ALL_MAF": str(self.maf_directory.resolve()),
+            "VCF_ALL_TMP": str(self.temporary_directory.resolve()),
+            "manifests": str(self.manifest_directory.resolve()),
+        }
+
+
+def prepare_v133_workspace(root: str | Path) -> V133Workspace:
+    """Create the four paper/V1.3.3 directories under a portable root."""
+
+    workspace_root = Path(root)
+    workspace = V133Workspace(
+        root=workspace_root,
+        input_directory=workspace_root / "VCF_ALL",
+        log_directory=workspace_root / "VCF_ALL_LOG",
+        maf_directory=workspace_root / "VCF_ALL_MAF",
+        temporary_directory=workspace_root / "VCF_ALL_TMP",
+        manifest_directory=workspace_root / "VCF_ALL_LOG" / "manifests",
+    )
+    for directory in (
+        workspace.input_directory,
+        workspace.log_directory,
+        workspace.maf_directory,
+        workspace.temporary_directory,
+        workspace.manifest_directory,
+    ):
+        directory.mkdir(parents=True, exist_ok=True)
+    return workspace
 
 
 @dataclass(frozen=True)
@@ -94,6 +159,7 @@ class BatchItemResult:
     has_normal: bool
     chosen_reference: str | None
     chosen_chain: str | None
+    final_vcf: str | None
     attempts: tuple[dict[str, str], ...]
 
     def to_dict(self) -> dict[str, object]:
@@ -615,6 +681,8 @@ def _annotate_with_reference_fallback(
     forks: int,
     work_directory: Path,
     attempts: list[dict[str, str]],
+    sample_tag: str,
+    compatibility_tmp_directory: Path | None,
 ) -> tuple[ResourceCandidate, AnnotationRun, Path]:
     failures: list[str] = []
     for index, candidate in enumerate(bundle.references_for(target_assembly), start=1):
@@ -637,22 +705,42 @@ def _annotate_with_reference_fallback(
                 bcftools=bcftools,
             )
             _remove_if_present(output_maf)
-            annotation = annotate_vcf(
-                normalized,
-                output_maf,
-                reference_fasta=candidate.path,
-                assembly=target_assembly,
-                cache_version=bundle.cache_version,
-                vep_data=bundle.vep_data,
-                vcf2maf=vcf2maf_path,
-                vep_path=vep_path,
-                tumor_id=sample.tumor_id,
-                vcf_tumor_id=sample.vcf_tumor_id,
-                normal_id=sample.normal_id,
-                vcf_normal_id=sample.vcf_normal_id,
-                forks=forks,
-                temporary_directory=work_directory / f"vcf2maf-{index}",
-            )
+            compatibility_label = re.sub(r"[^A-Za-z0-9._-]", "_", candidate.label)
+            if compatibility_tmp_directory is None:
+                annotation_tmp = work_directory / f"vcf2maf-{index}"
+                stdout_log = None
+                stderr_log = None
+            else:
+                annotation_tmp = compatibility_tmp_directory
+                lock_path = compatibility_tmp_directory / (
+                    f".lock.{sample_tag}.vcf2maf"
+                )
+                lock_path.touch(exist_ok=True)
+                stdout_log = compatibility_tmp_directory / (
+                    f"{sample_tag}.vcf2maf.{compatibility_label}.stdout.log"
+                )
+                stderr_log = compatibility_tmp_directory / (
+                    f"{sample_tag}.vcf2maf.{compatibility_label}.stderr.log"
+                )
+            with _sample_lock(annotation_tmp, sample_tag):
+                annotation = annotate_vcf(
+                    normalized,
+                    output_maf,
+                    reference_fasta=candidate.path,
+                    assembly=target_assembly,
+                    cache_version=bundle.cache_version,
+                    vep_data=bundle.vep_data,
+                    vcf2maf=vcf2maf_path,
+                    vep_path=vep_path,
+                    tumor_id=sample.tumor_id,
+                    vcf_tumor_id=sample.vcf_tumor_id,
+                    normal_id=sample.normal_id,
+                    vcf_normal_id=sample.vcf_normal_id,
+                    forks=forks,
+                    temporary_directory=annotation_tmp,
+                    stdout_log=stdout_log,
+                    stderr_log=stderr_log,
+                )
             normalize_maf_contigs(
                 output_maf, style=bundle.output_contig_style
             )
@@ -683,6 +771,7 @@ def _process_one(
     input_path: Path,
     output_directory: Path,
     work_root: Path,
+    manifest_directory: Path,
     *,
     bundle: ReferenceBundle,
     target_assembly: Assembly,
@@ -695,11 +784,12 @@ def _process_one(
     vep_path: str | Path | None,
     forks: int,
     overwrite: bool,
+    compatibility_tmp_directory: Path | None,
 ) -> BatchItemResult:
     stem = safe_output_stem(input_path)
     sample_tag = stem[:sample_tag_length]
     output_maf = output_directory / f"{stem}.maf"
-    manifest = output_directory / f"{stem}.maf.manifest.json"
+    manifest = manifest_directory / f"{stem}.maf.manifest.json"
     work_directory = work_root / f"{stem}.{uuid4().hex[:12]}"
     attempts: list[dict[str, str]] = []
     detected: Assembly | None = None
@@ -715,6 +805,7 @@ def _process_one(
             f"Output already exists: {output_maf}; pass --overwrite to replace it"
         )
     work_directory.mkdir(parents=True, exist_ok=True)
+    manifest_directory.mkdir(parents=True, exist_ok=True)
 
     try:
         staged = stage_vcf_input(input_path, work_directory / "00.staged.vcf")
@@ -771,6 +862,7 @@ def _process_one(
                 has_normal,
                 None,
                 None,
+                str(input_path.resolve()),
                 tuple(attempts),
             )
 
@@ -885,6 +977,8 @@ def _process_one(
                 forks=forks,
                 work_directory=work_directory,
                 attempts=attempts,
+                sample_tag=sample_tag,
+                compatibility_tmp_directory=compatibility_tmp_directory,
             )
             status = annotation.status
 
@@ -933,6 +1027,7 @@ def _process_one(
             has_normal,
             chosen_reference.label if chosen_reference else None,
             chosen_chain.label if chosen_chain else None,
+            str(final_vcf.resolve()) if final_vcf else str(target_input.resolve()),
             tuple(attempts),
         )
     except Exception as exc:
@@ -951,6 +1046,7 @@ def _process_one(
             has_normal,
             chosen_reference.label if chosen_reference else None,
             chosen_chain.label if chosen_chain else None,
+            str(final_vcf.resolve()) if final_vcf else None,
             tuple(attempts),
         )
 
@@ -979,6 +1075,52 @@ def _write_log(path: Path, items: Iterable[BatchItemResult]) -> None:
             )
 
 
+def _v133_ref_info(item: BatchItemResult) -> str:
+    if not item.source_assembly:
+        return "NA"
+    if item.source_assembly == item.target_assembly:
+        value = item.source_assembly
+    else:
+        value = f"{item.source_assembly}\N{RIGHTWARDS ARROW}{item.target_assembly}"
+        if item.chosen_chain:
+            value += f":{item.chosen_chain}"
+    if item.chosen_reference:
+        value += f"+{item.chosen_reference}"
+    return value
+
+
+def _write_v133_log(path: Path, items: Iterable[BatchItemResult]) -> None:
+    """Write the nine-column TSV displayed in the manuscript workflow figure."""
+
+    write_header = not path.is_file() or path.stat().st_size == 0
+    with path.open("a", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=_V133_LOG_FIELDS, delimiter="\t")
+        if write_header:
+            writer.writeheader()
+        for item in items:
+            valid_empty = item.status.startswith("VALID_EMPTY")
+            success = item.status != "FAILED"
+            if valid_empty:
+                message = "VCF has no variants; created empty MAF header"
+            elif success and item.chosen_reference:
+                message = f"vcf2maf completed with ref={item.chosen_reference}"
+            else:
+                message = item.message
+            writer.writerow(
+                {
+                    "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "vcf_path": item.input_path,
+                    "sample_tag8": item.sample_tag,
+                    "ref_info": _v133_ref_info(item),
+                    "is_gvcf": int(item.is_gvcf),
+                    "has_normal": int(item.has_normal),
+                    "status": "SUCCESS" if success else "FAILED",
+                    "message": message,
+                    "final_vcf": item.final_vcf or item.input_path,
+                }
+            )
+
+
 def batch_vcf_to_maf(
     input_directory: str | Path,
     output_directory: str | Path,
@@ -995,6 +1137,9 @@ def batch_vcf_to_maf(
     vep_path: str | Path | None = None,
     forks: int = 1,
     work_directory: str | Path | None = None,
+    log_directory: str | Path | None = None,
+    manifest_directory: str | Path | None = None,
+    v133_layout: bool = False,
     overwrite: bool = False,
 ) -> BatchRun:
     if jobs < 1:
@@ -1004,7 +1149,19 @@ def batch_vcf_to_maf(
     input_root = Path(input_directory)
     output_root = Path(output_directory)
     output_root.mkdir(parents=True, exist_ok=True)
-    work_root = Path(work_directory or output_root / ".cure-ngs-work")
+    log_root = Path(log_directory or output_root)
+    log_root.mkdir(parents=True, exist_ok=True)
+    manifest_root = Path(manifest_directory or output_root)
+    manifest_root.mkdir(parents=True, exist_ok=True)
+    compatibility_tmp_directory: Path | None = None
+    if v133_layout:
+        compatibility_tmp_directory = Path(
+            work_directory or output_root.parent / "VCF_ALL_TMP"
+        )
+        compatibility_tmp_directory.mkdir(parents=True, exist_ok=True)
+        work_root = compatibility_tmp_directory / ".cure-ngs-work"
+    else:
+        work_root = Path(work_directory or output_root / ".cure-ngs-work")
     work_root.mkdir(parents=True, exist_ok=True)
     inputs = discover_vcf_inputs(input_root)
     if not inputs:
@@ -1035,28 +1192,40 @@ def batch_vcf_to_maf(
         "vep_path": vep_path,
         "forks": forks,
         "overwrite": overwrite,
+        "compatibility_tmp_directory": compatibility_tmp_directory,
     }
     results: list[BatchItemResult] = []
     if jobs == 1:
         results = [
-            _process_one(path, output_root, work_root, **kwargs) for path in inputs
+            _process_one(
+                path, output_root, work_root, manifest_root, **kwargs
+            )
+            for path in inputs
         ]
     else:
         with ThreadPoolExecutor(max_workers=jobs) as executor:
             futures = {
                 executor.submit(
-                    _process_one, path, output_root, work_root, **kwargs
+                    _process_one,
+                    path,
+                    output_root,
+                    work_root,
+                    manifest_root,
+                    **kwargs,
                 ): path
                 for path in inputs
             }
             results = [future.result() for future in as_completed(futures)]
         results.sort(key=lambda item: item.input_path.casefold())
 
-    log_path = output_root / "vcf2maf_batch_log.tsv"
-    _write_log(log_path, results)
+    log_path = log_root / "vcf2maf_batch_log.tsv"
+    if v133_layout:
+        _write_v133_log(log_path, results)
+    else:
+        _write_log(log_path, results)
     succeeded = sum(item.status != "FAILED" for item in results)
     failed = len(results) - succeeded
-    summary_path = output_root / "vcf2maf_batch_summary.json"
+    summary_path = log_root / "vcf2maf_batch_summary.json"
     payload = {
         "status": "SUCCESS" if failed == 0 else "COMPLETED_WITH_FAILURES",
         "input_directory": str(input_root.resolve()),
@@ -1065,6 +1234,9 @@ def batch_vcf_to_maf(
         "succeeded": succeeded,
         "failed": failed,
         "log_tsv": str(log_path.resolve()),
+        "work_directory": str(work_root.resolve()),
+        "manifest_directory": str(manifest_root.resolve()),
+        "layout": "NCDC_batch_vcf2maf_V.1.3.3" if v133_layout else "portable",
         "items": [item.to_dict() for item in results],
     }
     summary_path.write_text(

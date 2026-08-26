@@ -18,7 +18,7 @@ Panel-Based NGS in Precision Oncology."
 
 It provides one stable project home page for:
 
-- the supported `cure-ngs-harmonizer` 0.2.2 command-line package
+- the supported `cure-ngs-harmonizer` 0.2.3 command-line package
 - digest- and version-pinned core and full Docker images
 - synthetic fixtures, automated tests, and continuous integration
 - aggregate technical-validation results and their figure-generation script
@@ -46,7 +46,7 @@ environments.
 
 | Repository | Responsibility in CURE-NGS | Supported unified entry point | Latest audited component release |
 | --- | --- | --- | --- |
-| **[cure-ngs-panel-harmonization-framework](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework)** | Canonical project home, unified CLI, Docker/OCI images, tests, reviewer data, validation, and manuscript metadata | `cure-ngs` / `scripts/run_reviewer_demo.sh` | Consolidated release `0.2.2` |
+| **[cure-ngs-panel-harmonization-framework](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework)** | Canonical project home, unified CLI, Docker/OCI images, tests, reviewer data, validation, and manuscript metadata | `cure-ngs` / `scripts/run_reviewer_demo.sh` | Consolidated release `0.2.3` |
 | [panel_VCF_vcf2maf_pipeline](https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline) | VCF sanitation, assembly handling, and VCF-to-MAF conversion | `cure-ngs normalize-vcf` and `cure-ngs vcf-to-maf` | `NCDC_batch_vcf2maf_V.1.3.3_github` |
 | [HGVS_to_minimal_MAF_pipeline](https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline) | Structured/report-derived HGVS to minimal MAF | `cure-ngs hgvs-table-to-minimal-maf` | `minimal_maf_vep_hg38tohg19_V.1.0.3` |
 | [minimal_MAF_to_annotated_MAF_pipeline](https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline) | Minimal MAF conversion and re-annotation | `cure-ngs minimal-maf-to-vcf` and `cure-ngs annotate-vcf` | `minimal_maf_to_vep_maf_V.1.0.2` |
@@ -106,8 +106,8 @@ for a commit or pull request:
 ```bash
 git clone https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework.git
 cd cure-ngs-panel-harmonization-framework
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3
 docker build --file docker/Dockerfile.core --tag "$CORE_IMAGE" .
 docker build --file docker/Dockerfile --tag "$FULL_IMAGE" .
 ```
@@ -115,8 +115,8 @@ docker build --file docker/Dockerfile --tag "$FULL_IMAGE" .
 The release images can be downloaded without building locally:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3
 docker pull "$CORE_IMAGE"
 docker pull "$FULL_IMAGE"
 ```
@@ -128,15 +128,15 @@ and digests are visible on the
 ### 3. Verify the installation
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3
 docker run --rm "$FULL_IMAGE" versions
 docker run --rm "$CORE_IMAGE" doctor --profile core
 bash scripts/verify_public_install.sh
 ```
 
 Keep the complete `ghcr.io/ncdcbioinformatics/...` image name when running a
-downloaded image. A short name such as `cure-ngs-harmonizer:0.2.2` is a
+downloaded image. A short name such as `cure-ngs-harmonizer:0.2.3` is a
 different local tag and may make Docker query Docker Hub instead of GHCR.
 
 The core reviewer test needs no human reference download. Full VCF-to-MAF
@@ -165,7 +165,7 @@ is the stable path seen by CURE-NGS:
 
 ```bash
 REFERENCE_DIR=/path/to/your/reference-store
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3
 mkdir -p config
 
 docker run --rm --user "$(id -u):$(id -g)" \
@@ -182,22 +182,53 @@ docker run --rm \
   --reference-root /references \
   | tee reference-bundle.preflight.json
 
+mkdir -p "$PWD/KOSMOS_VCF/VCF_ALL"
+# Put one or more .vcf/.vcf.gz/.g.vcf files in KOSMOS_VCF/VCF_ALL.
+
 docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
-  --volume "$PWD/input:/data/input:ro" \
-  --volume "$PWD/output:/data/output" \
+  --user "$(id -u):$(id -g)" \
+  --volume "$PWD/KOSMOS_VCF:/data/KOSMOS_VCF" \
   --volume "$REFERENCE_DIR:/references:ro" \
   --volume "$PWD/config:/config:ro" \
   "$FULL_IMAGE" batch-vcf-to-maf \
-  /data/input /data/output \
+  --workspace-root /data/KOSMOS_VCF \
   --reference-config /config/reference-config.json \
   --reference-root /references --jobs 4
 ```
+
+The command creates and uses the same layout shown in the manuscript and in
+`NCDC_batch_vcf2maf_V.1.3.3_github`:
+
+```text
+KOSMOS_VCF/
+|-- VCF_ALL/       # original user VCFs
+|-- VCF_ALL_LOG/   # vcf2maf_batch_log.tsv, summary, manifests
+|-- VCF_ALL_MAF/   # one <sanitized-input-name>.maf per VCF
+`-- VCF_ALL_TMP/   # processed VCFs, VEP/vcf2maf temp files and logs
+```
+
+To see that structure immediately without downloading the large reference
+assets, export the bundled non-clinical 25-record VCF and validated 25-row
+reference MAF to a local bind mount:
+
+```bash
+mkdir -p "$PWD/tutorial-layout"
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD/tutorial-layout:/data/output" \
+  "$CORE_IMAGE" export-v1.3.3-example /data/output/KOSMOS_VCF
+find "$PWD/tutorial-layout/KOSMOS_VCF" -maxdepth 3 -type f -print
+```
+
+The exported log uses `REFERENCE_OUTPUT`, so it cannot be mistaken for a new
+VEP run. The full-image command above performs the actual annotation.
 
 GRCh37 is the default target. GRCh38 inputs are detected and lifted with the
 configured chain candidates; GRCh37 inputs bypass liftover. The batch command
 also restores gVCF filtering, legacy GINS/header repair, empty-VCF handling,
 eight-character sample tags, parallel jobs, per-file manifests, and a TSV/JSON
-batch report. See the
+batch report. In V1.3.3 layout mode, the TSV retains the exact manuscript
+columns `datetime`, `vcf_path`, `sample_tag8`, `ref_info`, `is_gvcf`,
+`has_normal`, `status`, `message`, and `final_vcf`. See the
 [V1.3.3 batch workflow guide](docs/V1.3.3_BATCH_WORKFLOW.md).
 
 ## First-time user tutorial
@@ -227,7 +258,7 @@ data bundle from a downloaded image:
 mkdir -p tutorial-data
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/tutorial-data:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core \
   export-tutorial-data /data/output/component-test-data
 ```
 
@@ -300,7 +331,8 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The current suite collects 88 tests and exceeds the required 70% branch-aware
+The current suite collects 95 tests (93 passed and 2 bcftools-dependent tests
+skip only on hosts without bcftools) and exceeds the required 70% branch-aware
 coverage floor. The Linux container job separately runs the complete beginner
 six-component walkthrough under hardened container settings.
 
@@ -325,10 +357,10 @@ Build the full VEP/vcf2maf image:
 
 ```bash
 docker build --file docker/Dockerfile \
-  --tag cure-ngs-harmonizer:0.2.2 .
+  --tag cure-ngs-harmonizer:0.2.3 .
 docker run --rm --read-only --tmpfs /tmp:size=64m \
   --security-opt no-new-privileges:true \
-  cure-ngs-harmonizer:0.2.2 versions
+  cure-ngs-harmonizer:0.2.3 versions
 ```
 
 The image runs as non-root UID/GID 10001. It pins Python 3.10.12, bcftools 1.13,
@@ -347,7 +379,7 @@ layouts are provided in [the reference-data guide](docs/REFERENCE_DATA.md).
 Check the mounted environment before analysis:
 
 ```bash
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
   "$FULL_IMAGE" doctor \

@@ -6,6 +6,8 @@ import os
 import shutil
 from pathlib import Path
 
+from .batch import prepare_v133_workspace
+
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -115,4 +117,77 @@ def export_tutorial_data(
         "output": str(destination.resolve()),
         "file_count": verification["file_count"],
         "components": len(manifest.get("components", [])),
+    }
+
+
+def export_v133_example_workspace(
+    output: str | Path,
+    *,
+    source: str | Path | None = None,
+    force: bool = False,
+) -> dict[str, object]:
+    """Export the public 25-record VCF/MAF pair in the paper's folder layout.
+
+    This is an inspectable reference snapshot, not a substitute for executing
+    ``batch-vcf-to-maf --workspace-root`` with a configured VEP bundle.
+    """
+
+    source_root, _ = load_tutorial_manifest(source)
+    verify_tutorial_data(source_root)
+    workspace = prepare_v133_workspace(output)
+    input_target = workspace.input_directory / "test_b37.vcf"
+    maf_target = workspace.maf_directory / "test_b37.maf"
+    log_target = workspace.log_directory / "vcf2maf_batch_log.tsv"
+    snapshot_manifest = workspace.log_directory / "reference-output.json"
+    targets = (input_target, maf_target, log_target, snapshot_manifest)
+    existing = [path for path in targets if path.exists()]
+    if existing and not force:
+        raise FileExistsError(
+            "Example workspace files already exist: "
+            + ", ".join(str(path) for path in existing)
+            + "; pass --force to overwrite only these bundled example files"
+        )
+
+    shutil.copy2(source_root / "inputs" / "test_b37.vcf", input_target)
+    shutil.copy2(source_root / "expected" / "test_b37.maf", maf_target)
+    log_target.write_text(
+        "datetime\tvcf_path\tsample_tag8\tref_info\tis_gvcf\thas_normal\t"
+        "status\tmessage\tfinal_vcf\n"
+        "BUNDLED_REFERENCE\tVCF_ALL/test_b37.vcf\ttest_b37\tGRCh37\t0\t1\t"
+        "REFERENCE_OUTPUT\tvalidated 25-row public reference MAF; run the full "
+        "image to reproduce annotation\tVCF_ALL/test_b37.vcf\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    payload = {
+        "schema_version": "1.0",
+        "status": "REFERENCE_SNAPSHOT",
+        "note": (
+            "The MAF was copied from the validated public component fixture. "
+            "It was not re-annotated by this export command."
+        ),
+        "input": {
+            "path": "VCF_ALL/test_b37.vcf",
+            "records": 25,
+            "sha256": _sha256(input_target),
+        },
+        "reference_output": {
+            "path": "VCF_ALL_MAF/test_b37.maf",
+            "rows": 25,
+            "sha256": _sha256(maf_target),
+        },
+        "full_run_command": (
+            "cure-ngs batch-vcf-to-maf --workspace-root /data/KOSMOS_VCF "
+            "--reference-config /references/reference-config.json"
+        ),
+    }
+    snapshot_manifest.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    return {
+        **payload,
+        "workspace": workspace.to_dict(),
+        "input_file": str(input_target.resolve()),
+        "reference_maf": str(maf_target.resolve()),
+        "log_tsv": str(log_target.resolve()),
     }

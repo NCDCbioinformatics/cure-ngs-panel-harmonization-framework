@@ -8,7 +8,7 @@ from pathlib import Path
 
 from . import __version__
 from .annotation import annotate_vcf
-from .batch import batch_vcf_to_maf
+from .batch import batch_vcf_to_maf, prepare_v133_workspace
 from .concordance import compare_maf_routes
 from .fusion import normalize_fusion
 from .gene import GeneCatalog
@@ -28,7 +28,11 @@ from .resources import verify_profile_resources
 from .runtime import runtime_versions
 from .table_io import normalize_hgvs_table
 from .tools import normalize_vcf, tool_version
-from .tutorial_data import export_tutorial_data, verify_tutorial_data
+from .tutorial_data import (
+    export_tutorial_data,
+    export_v133_example_workspace,
+    verify_tutorial_data,
+)
 from .vcf import inspect_vcf, sanitize_vcf
 from .workflows import DEFAULT_TARGET_ASSEMBLY, vcf_to_maf
 
@@ -128,6 +132,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Overwrite named bundle files in a non-empty output directory",
     )
     tutorial_data.add_argument("--source", help=argparse.SUPPRESS)
+
+    v133_example = subparsers.add_parser(
+        "export-v1.3.3-example",
+        help=(
+            "Create the manuscript's VCF_ALL/LOG/MAF/TMP tree with the public "
+            "25-record VCF and validated 25-row reference MAF"
+        ),
+    )
+    v133_example.add_argument("workspace_root")
+    v133_example.add_argument("--force", action="store_true")
+    v133_example.add_argument("--source", help=argparse.SUPPRESS)
 
     tutorial_verify = subparsers.add_parser(
         "verify-tutorial-data",
@@ -314,8 +329,23 @@ def build_parser() -> argparse.ArgumentParser:
             "reference and liftover fallback configuration"
         ),
     )
-    batch_workflow.add_argument("input_directory")
-    batch_workflow.add_argument("output_directory")
+    batch_workflow.add_argument(
+        "input_directory",
+        nargs="?",
+        help="Input VCF directory (omit when --workspace-root is used)",
+    )
+    batch_workflow.add_argument(
+        "output_directory",
+        nargs="?",
+        help="Output MAF directory (omit when --workspace-root is used)",
+    )
+    batch_workflow.add_argument(
+        "--workspace-root",
+        help=(
+            "Create/use the manuscript and NCDC V1.3.3 layout below this root: "
+            "VCF_ALL, VCF_ALL_LOG, VCF_ALL_MAF, and VCF_ALL_TMP"
+        ),
+    )
     batch_workflow.add_argument("--reference-config", required=True)
     batch_workflow.add_argument("--reference-root")
     batch_workflow.add_argument("--source-assembly", type=_assembly)
@@ -442,6 +472,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "export-tutorial-data":
             result = export_tutorial_data(
                 args.output, source=args.source, force=args.force
+            )
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            return 0
+
+        if args.command == "export-v1.3.3-example":
+            result = export_v133_example_workspace(
+                args.workspace_root, source=args.source, force=args.force
             )
             print(json.dumps(result, indent=2, ensure_ascii=False))
             return 0
@@ -804,12 +841,40 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "batch-vcf-to-maf":
+            if args.workspace_root:
+                if args.input_directory or args.output_directory:
+                    raise ValueError(
+                        "Use either --workspace-root or input/output directories, not both"
+                    )
+                if args.work_directory:
+                    raise ValueError(
+                        "--work-directory cannot be combined with --workspace-root; "
+                        "VCF_ALL_TMP is selected automatically"
+                    )
+                workspace = prepare_v133_workspace(args.workspace_root)
+                input_directory = workspace.input_directory
+                output_directory = workspace.maf_directory
+                work_directory = workspace.temporary_directory
+                log_directory = workspace.log_directory
+                manifest_directory = workspace.manifest_directory
+                v133_layout = True
+            else:
+                if not args.input_directory or not args.output_directory:
+                    raise ValueError(
+                        "Supply input_directory and output_directory, or use --workspace-root"
+                    )
+                input_directory = args.input_directory
+                output_directory = args.output_directory
+                work_directory = args.work_directory
+                log_directory = None
+                manifest_directory = None
+                v133_layout = False
             bundle = load_reference_bundle(
                 args.reference_config, reference_root=args.reference_root
             )
             result = batch_vcf_to_maf(
-                args.input_directory,
-                args.output_directory,
+                input_directory,
+                output_directory,
                 bundle=bundle,
                 target_assembly=args.target_assembly,
                 source_assembly=args.source_assembly,
@@ -821,7 +886,10 @@ def main(argv: list[str] | None = None) -> int:
                 vcf2maf_path=args.vcf2maf,
                 vep_path=args.vep_path,
                 forks=args.forks,
-                work_directory=args.work_directory,
+                work_directory=work_directory,
+                log_directory=log_directory,
+                manifest_directory=manifest_directory,
+                v133_layout=v133_layout,
                 overwrite=args.overwrite,
             )
             print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
