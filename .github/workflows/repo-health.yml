@@ -43,6 +43,9 @@ jobs:
           test -f scripts/verify_public_install.sh
           test -f scripts/run_beginner_tutorial.ps1
           test -f examples/public/vcf2maf/test_b37.vcf
+          test -f examples/component-tests/manifest.json
+          test -f examples/component-tests/inputs/MSKCC_VCCF_test.zip
+          test -f examples/component-tests/expected/test_b37.maf
           test -f data/README.md
 
       - name: Verify required text markers
@@ -55,5 +58,6 @@ jobs:
           grep -q "Competing Interest declaration" docs/MANUSCRIPT_DECLARATIONS.md
           grep -q "Beginner six-component tutorial passed" scripts/run_beginner_tutorial.sh
           grep -q "CURE-NGS public installation verified" scripts/verify_public_install.sh
+          grep -q "export-tutorial-data" docs/BEGINNER_TUTORIAL.md
           bash -n scripts/run_beginner_tutorial.sh
           bash -n scripts/verify_public_install.sh

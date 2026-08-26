@@ -28,6 +28,7 @@ from .resources import verify_profile_resources
 from .runtime import runtime_versions
 from .table_io import normalize_hgvs_table
 from .tools import normalize_vcf, tool_version
+from .tutorial_data import export_tutorial_data, verify_tutorial_data
 from .vcf import inspect_vcf, sanitize_vcf
 from .workflows import DEFAULT_TARGET_ASSEMBLY, vcf_to_maf
 
@@ -115,6 +116,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bundle_init.add_argument("--cache-version", type=int, default=116)
     bundle_init.add_argument("--force", action="store_true")
+
+    tutorial_data = subparsers.add_parser(
+        "export-tutorial-data",
+        help="Copy the six-component public test bundle from the image to the host",
+    )
+    tutorial_data.add_argument("output")
+    tutorial_data.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite named bundle files in a non-empty output directory",
+    )
+    tutorial_data.add_argument("--source", help=argparse.SUPPRESS)
+
+    tutorial_verify = subparsers.add_parser(
+        "verify-tutorial-data",
+        help="Verify every bundled public test file against its SHA-256 manifest",
+    )
+    tutorial_verify.add_argument("--source", help=argparse.SUPPRESS)
 
     inspect = subparsers.add_parser("inspect-vcf", help="Inspect VCF structure")
     inspect.add_argument("input")
@@ -418,6 +437,18 @@ def main(argv: list[str] | None = None) -> int:
                     ensure_ascii=False,
                 )
             )
+            return 0
+
+        if args.command == "export-tutorial-data":
+            result = export_tutorial_data(
+                args.output, source=args.source, force=args.force
+            )
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            return 0
+
+        if args.command == "verify-tutorial-data":
+            result = verify_tutorial_data(args.source)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
             return 0
 
         if args.command == "inspect-vcf":

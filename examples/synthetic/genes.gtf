@@ -2,3 +2,4 @@
 1	synthetic	gene	1	10	.	+	.	gene_id "ENSG_SYNTHETIC_1"; gene_name "TP53";
 1	synthetic	gene	11	20	.	+	.	gene_id "ENSG_SYNTHETIC_2"; gene_name "EML4";
 1	synthetic	gene	21	30	.	+	.	gene_id "ENSG_SYNTHETIC_3"; gene_name "ALK";
+1	synthetic	gene	31	40	.	+	.	gene_id "ENSG_SYNTHETIC_4"; gene_name "EMSY";

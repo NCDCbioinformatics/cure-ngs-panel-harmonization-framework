@@ -1,0 +1,155 @@
+{
+  "schema_version": "1.0",
+  "bundle_version": "0.2.2",
+  "title": "CURE-NGS original six-component public test bundle",
+  "privacy": "Public software fixtures with generic test identifiers; no patient-level data",
+  "components": [
+    {
+      "order": 1,
+      "repository": "panel_VCF_vcf2maf_pipeline",
+      "source_url": "https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline/blob/main/MSKCC_VCCF_test.zip",
+      "inputs": [
+        "inputs/MSKCC_VCCF_test.zip",
+        "inputs/test_b37.vcf"
+      ],
+      "reference_outputs": [
+        "expected/test_b37.maf"
+      ],
+      "expected": {
+        "test_b37_vcf_records": 25,
+        "test_b37_maf_rows": 25,
+        "assembly": "GRCh37"
+      }
+    },
+    {
+      "order": 2,
+      "repository": "HGVS_to_minimal_MAF_pipeline",
+      "source_url": "https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline/blob/main/minimal_maf_test_normalized.xlsx",
+      "inputs": [
+        "inputs/minimal_maf_test_normalized.xlsx"
+      ],
+      "reference_outputs": [
+        "inputs/minimal_maf_from_hgvs_vep_V2.maf"
+      ],
+      "expected": {
+        "input_rows": 2625,
+        "minimal_maf_rows": 2113
+      }
+    },
+    {
+      "order": 3,
+      "repository": "minimal_MAF_to_annotated_MAF_pipeline",
+      "source_url": "https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline/blob/main/minimal_maf_from_hgvs_vep_V2.maf",
+      "inputs": [
+        "inputs/minimal_maf_from_hgvs_vep_V2.maf"
+      ],
+      "reference_outputs": [
+        "expected/minimal_maf_from_hgvs_vep_V2.vcf2maf.maf"
+      ],
+      "expected": {
+        "minimal_maf_rows": 2113,
+        "annotated_maf_rows": 2054,
+        "assembly": "GRCh37"
+      }
+    },
+    {
+      "order": 4,
+      "repository": "gene_name_harmonization",
+      "source_url": "https://github.com/NCDCbioinformatics/gene_name_harmonization/blob/main/gene_name_test.csv",
+      "inputs": [
+        "inputs/gene_name_test.csv"
+      ],
+      "reference_outputs": [],
+      "expected": {
+        "rows": 324,
+        "changed_symbols": 15
+      }
+    },
+    {
+      "order": 5,
+      "repository": "gene_fusion_normalizer",
+      "source_url": "https://github.com/NCDCbioinformatics/gene_fusion_normalizer/blob/main/gene_split_test.csv",
+      "inputs": [
+        "inputs/gene_split_test.csv"
+      ],
+      "reference_outputs": [],
+      "expected": {
+        "rows": 274,
+        "first_input": "ALK-EML4",
+        "first_normalized": "ALK--EML4"
+      }
+    },
+    {
+      "order": 6,
+      "repository": "hgvs_normerlizer",
+      "source_url": "https://github.com/NCDCbioinformatics/hgvs_normerlizer/blob/main/hgvs_to_minimal_maf_test.xlsx",
+      "inputs": [
+        "inputs/hgvs_to_minimal_maf_test.xlsx"
+      ],
+      "reference_outputs": [
+        "expected/minimal_maf_test_normalized.xlsx"
+      ],
+      "expected": {
+        "input_rows": 2625,
+        "historical_output_rows": 2625
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "LICENSE.MSKCC-vcf2maf.Apache-2.0",
+      "bytes": 592,
+      "sha256": "483a3adc84e4f85f113bba7c16fa9a1e3f8a0bbc2a50ac2826202963c7df9763"
+    },
+    {
+      "path": "inputs/MSKCC_VCCF_test.zip",
+      "bytes": 448242,
+      "sha256": "8af27060059d7a812caa0d033e22138194b79d5c15937c4b8379d890bc603650"
+    },
+    {
+      "path": "inputs/test_b37.vcf",
+      "bytes": 1862,
+      "sha256": "cb87c5528f1fe4712befe4fd1befcb6668e787fcb866c61bcc7f042f0f900936"
+    },
+    {
+      "path": "expected/test_b37.maf",
+      "bytes": 28831,
+      "sha256": "36453d3d2952e8ccf207557a6c349f5f550ea0751ab3cde89e37741d2c23217d"
+    },
+    {
+      "path": "inputs/minimal_maf_test_normalized.xlsx",
+      "bytes": 153497,
+      "sha256": "35005456bcbf041eb2099e4d8a4ec944137ca7fca2824e6ed3c5a70ea65efac3"
+    },
+    {
+      "path": "inputs/minimal_maf_from_hgvs_vep_V2.maf",
+      "bytes": 103695,
+      "sha256": "a296c37215172fb492af975f063bde9488b59fa61d6d1e8b2c62783679b703d0"
+    },
+    {
+      "path": "expected/minimal_maf_from_hgvs_vep_V2.vcf2maf.maf",
+      "bytes": 1756033,
+      "sha256": "622812f3b8674598c25ecf9571bc93b43b8f67f8079d7e82cdb7c6937a1e592d"
+    },
+    {
+      "path": "inputs/gene_name_test.csv",
+      "bytes": 14818,
+      "sha256": "ff6330c509bf5c605a79e23b3b00fe35889dbd587a6e79d86844efff924a2670"
+    },
+    {
+      "path": "inputs/gene_split_test.csv",
+      "bytes": 4220,
+      "sha256": "4d306e4272277e48b46bb000b3769e6269a7105483e5ddc9254be360e989a705"
+    },
+    {
+      "path": "inputs/hgvs_to_minimal_maf_test.xlsx",
+      "bytes": 95206,
+      "sha256": "64eb9e969fc042bcd5e2206278758e67074b41e77995350b2e9277cbf5c55562"
+    },
+    {
+      "path": "expected/minimal_maf_test_normalized.xlsx",
+      "bytes": 153497,
+      "sha256": "35005456bcbf041eb2099e4d8a4ec944137ca7fca2824e6ed3c5a70ea65efac3"
+    }
+  ]
+}

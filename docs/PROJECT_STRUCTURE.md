@@ -71,8 +71,9 @@ to record the exact resources used.
    `bash scripts/run_beginner_tutorial.sh`.
 3. Reviewers can additionally run `bash scripts/run_reviewer_demo.sh` to build
    the image directly from the checked-out source.
-4. Inspect `versions.json`, `doctor.json`, generated manifests, and concordance
-   outputs under `tutorial-output/` or `reviewer-output/`.
+4. Inspect the exported `component-test-data/`, `versions.json`, `doctor.json`,
+   generated manifests, and concordance outputs under `tutorial-output/` or
+   `reviewer-output/`.
 5. For a full VEP/vcf2maf run, install the external GRCh37 FASTA and matching
    VEP 116 cache described in `docs/REFERENCE_DATA.md`.
 6. Cite the umbrella release or immutable commit SHA. Use the six component

@@ -85,12 +85,12 @@ Create the required indexes with tools already in the full image:
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/references:/references" \
-  --entrypoint samtools ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1 \
+  --entrypoint samtools ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2 \
   faidx /references/grch37/hg19.fa
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/references:/references" \
-  --entrypoint java ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1 \
+  --entrypoint java ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2 \
   -jar /opt/picard/picard.jar CreateSequenceDictionary \
   R=/references/grch37/hg19.fa O=/references/grch37/hg19.dict
 ```
@@ -180,14 +180,14 @@ mkdir -p config
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/config:/config" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1 init-reference-config \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2 init-reference-config \
   /config/reference-config.json \
   --reference-root /references --cache-version 116
 
 docker run --rm \
   --volume "$REFERENCE_DIR:/references:ro" \
   --volume "$PWD/config:/config:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1 doctor-bundle \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2 doctor-bundle \
   --reference-config /config/reference-config.json \
   --reference-root /references \
   | tee reference-bundle.preflight.json
@@ -203,7 +203,7 @@ GRCh37 VCF-to-MAF environment:
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1 doctor \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2 doctor \
   --profile vcf-to-maf \
   --assembly GRCh37 \
   --reference-fasta /references/grch37/hg19.fa \
@@ -216,7 +216,7 @@ Gene and fusion resources:
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1 doctor \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2 doctor \
   --profile gene \
   --gtf /references/genes/gencode.v19.annotation.gtf.gz \
   --hgnc /references/genes/hgnc_complete_set.txt

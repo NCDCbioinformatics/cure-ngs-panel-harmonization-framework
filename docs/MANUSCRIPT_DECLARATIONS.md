@@ -28,7 +28,7 @@ Any restrictions to use by non-academics: None
 
 ## Data Availability declaration
 
-Data Availability declaration: This manuscript describes a methodological and software framework developed during the pre-accrual phase of CURE-NGS. No new patient-level clinical or genomic dataset is publicly released as part of this study, and no individual-level patient data are deposited in the project repository. Public release of consortium-scale CURE-NGS data was not possible at the time of manuscript preparation. The repository therefore provides software, documentation, and reproducibility metadata rather than patient-level source data.
+Data Availability declaration: This manuscript describes a methodological and software framework developed during the pre-accrual phase of CURE-NGS. No new patient-level clinical or genomic dataset is publicly released as part of this study, and no individual-level patient data are deposited in the project repository. Public release of consortium-scale CURE-NGS data was not possible at the time of manuscript preparation. The repository provides public non-clinical software fixtures from all six components, derived non-empty reference outputs, source URLs, checksums, documentation, and reproducibility metadata. These generic test materials are distributed for software verification and are not patient-level source data.
 
 ## Code Availability declaration
 

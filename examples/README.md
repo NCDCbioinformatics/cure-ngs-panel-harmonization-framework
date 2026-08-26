@@ -1,6 +1,6 @@
 # Reviewer examples
 
-This directory contains two complementary, non-clinical test sets.
+This directory contains three complementary, non-clinical test sets.
 
 1. `synthetic/` is an original, self-contained GRCh37 fixture set. It is tiny
    enough to run in continuous integration and exercises the functions mapped
@@ -10,6 +10,10 @@ This directory contains two complementary, non-clinical test sets.
    caller-format testing. The local file is byte-identical to the fixture at the
    pinned vcf2maf revision. Its upstream source and Apache-2.0 terms are recorded
    next to the file.
+3. `component-tests/` collects the original public VCF/XLSX/CSV inputs from all
+   six component repositories plus non-empty historical reference MAFs. It has
+   a machine-readable source/checksum/row-count manifest and is embedded in the
+   released Docker images for host-side export.
 
 First-time users should start with the fully explained tutorial:
 
@@ -42,12 +46,12 @@ VEP cache are several gigabytes; see `docs/REFERENCE_DATA.md`.
 
 | Historical component | Reviewer example |
 | --- | --- |
-| `panel_VCF_vcf2maf_pipeline` | GRCh37 VCF inspection/normalization and restored batch empty-VCF handling |
-| `HGVS_to_minimal_MAF_pipeline` | frozen synthetic Ensembl REST-cache replay |
-| `minimal_MAF_to_annotated_MAF_pipeline` | minimal MAF to per-sample VCF conversion; full annotation is documented separately |
-| `gene_name_harmonization` | GTF/HGNC-backed alias normalization |
-| `gene_fusion_normalizer` | directional fusion normalization |
-| `hgvs_normerlizer` | CSV HGVS normalization regression |
+| `panel_VCF_vcf2maf_pipeline` | Original 25-record VCF and 25-row reference MAF; GRCh37 normalization; separate valid-empty edge case |
+| `HGVS_to_minimal_MAF_pipeline` | Original 2,625-row workbook/reference minimal MAF and frozen synthetic Ensembl REST-cache replay |
+| `minimal_MAF_to_annotated_MAF_pipeline` | Original minimal/annotated MAF pair and minimal MAF to per-sample VCF conversion |
+| `gene_name_harmonization` | Original 324-row CSV and GTF/HGNC-backed alias normalization |
+| `gene_fusion_normalizer` | Original 274-row CSV and directional fusion normalization |
+| `hgvs_normerlizer` | Complete original 2,625-row XLSX normalization and CSV regression |
 
 Expected properties are asserted by the scripts rather than by comparing
 absolute paths or run manifests, which intentionally vary by host.

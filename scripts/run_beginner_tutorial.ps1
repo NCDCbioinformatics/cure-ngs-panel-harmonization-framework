@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Engine = $env:CONTAINER_ENGINE,
-    [string]$Image = $(if ($env:CURE_NGS_IMAGE) { $env:CURE_NGS_IMAGE } else { "ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core" })
+    [string]$Image = $(if ($env:CURE_NGS_IMAGE) { $env:CURE_NGS_IMAGE } else { "ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core" })
 )
 
 $ErrorActionPreference = "Stop"
@@ -43,4 +43,5 @@ $env:CURE_NGS_COMPLETION_MESSAGE = "Beginner six-component tutorial passed"
 
 Write-Host ""
 Write-Host "Next: read docs/BEGINNER_TUTORIAL.md to understand each command and output."
+Write-Host "The exported original inputs and reference outputs are inside component-test-data/."
 Write-Host "The optional full-annotation section explains the external GRCh37/VEP data."

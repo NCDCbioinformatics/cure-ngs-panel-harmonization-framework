@@ -1,9 +1,11 @@
 # Beginner tutorial: run all six CURE-NGS components
 
-This tutorial starts with a new machine and uses only the non-clinical example
-data committed to this repository. The deterministic part needs Docker or
-Podman, Git, and about 2 GB of free disk space. It does not need Python, a human
-reference genome, a VEP cache, patient data, or a GitHub login.
+This tutorial starts with a new machine and uses the original non-clinical test
+files collected from all six component repositories. The files are embedded in
+both Docker images and are automatically copied to a normal local output
+folder. The deterministic part needs Docker or Podman, Git, and about 2 GB of
+free disk space. It does not need Python, a human reference genome, a VEP
+cache, patient data, or a GitHub login.
 
 The examples are deliberately tiny. `tiny.grch37.fa` is a software fixture,
 not a biological reference, and must never be used for research or clinical
@@ -13,12 +15,12 @@ analysis.
 
 | Historical component repository | Unified command in this tutorial | Expected result |
 | --- | --- | --- |
-| `panel_VCF_vcf2maf_pipeline` | `inspect-vcf`, `normalize-vcf`, `batch-vcf-to-maf` | 25 public input records; 4 normalized synthetic records; auditable empty-VCF result |
-| `HGVS_to_minimal_MAF_pipeline` | `hgvs-table-to-minimal-maf` | 1 minimal-MAF row replayed from the frozen REST response |
-| `minimal_MAF_to_annotated_MAF_pipeline` | `minimal-maf-to-vcf` | 3 reference-valid variants for one sample |
-| `gene_name_harmonization` | `normalize-gene` | `P53` resolves to `TP53` |
-| `gene_fusion_normalizer` | `normalize-fusion` | `EML4-ALK` resolves to directional `EML4--ALK` |
-| `hgvs_normerlizer` | `normalize-hgvs-table` | malformed case/parentheses are normalized with an audit manifest |
+| `panel_VCF_vcf2maf_pipeline` | `inspect-vcf`, `normalize-vcf`, `batch-vcf-to-maf` | Original 25-record VCF and non-empty 25-row MAF; sanitation smoke test; empty edge case kept separate |
+| `HGVS_to_minimal_MAF_pipeline` | `hgvs-table-to-minimal-maf` | Original 2,625-row workbook and 2,113-row reference minimal MAF; one deterministic offline replay |
+| `minimal_MAF_to_annotated_MAF_pipeline` | `minimal-maf-to-vcf` | Original 2,113-row minimal MAF and 2,054-row annotated reference MAF; 3-row conversion smoke test |
+| `gene_name_harmonization` | `normalize-gene` | Original 324-row CSV is exported; its `C11ORF30` example resolves to `EMSY` |
+| `gene_fusion_normalizer` | `normalize-fusion` | Original 274-row CSV is exported; its first `ALK-EML4` example resolves to `ALK--EML4` |
+| `hgvs_normerlizer` | `normalize-hgvs-table` | The complete original 2,625-row XLSX is normalized and saved locally |
 
 The final step compares the VCF-derived and report/HGVS-derived routes and
 expects 100% exact agreement for the synthetic truth set.
@@ -61,7 +63,7 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/run_beginner_tutorial.ps1
 ```
 
-The launcher downloads the public `0.2.1-core` image, runs all six component
+The launcher downloads the public `0.2.2-core` image, runs all six component
 groups without container network access, checks every expected result, and
 writes outputs to a new timestamped directory under `tutorial-output/`.
 Success ends with:
@@ -91,7 +93,7 @@ The rest of this page expands the same workflow command by command.
 The following section uses a Bash shell. Start in the cloned repository:
 
 ```bash
-IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
 REPO="$PWD"
 OUTPUT_DIR="$REPO/tutorial-output/manual"
 
@@ -103,7 +105,6 @@ cure_ngs() {
     --user "$(id -u):$(id -g)" \
     --tmpfs /tmp:size=256m,mode=1777 \
     --security-opt no-new-privileges:true \
-    --mount "type=bind,source=$REPO/examples,target=/examples,readonly" \
     --mount "type=bind,source=$OUTPUT_DIR,target=/data/output" \
     "$IMAGE" "$@"
 }
@@ -120,12 +121,29 @@ echo "Local output directory: $OUTPUT_DIR"
 cure_ngs --version
 ```
 
-The expected version is `0.2.1`. The bind mounts mean:
+The expected version is `0.2.2`. The bind mount means:
 
 | Docker path | Local host path | Purpose |
 | --- | --- | --- |
-| `/examples` | `$REPO/examples` | read-only inputs committed to GitHub |
 | `/data/output` | `$OUTPUT_DIR` | persistent results on the user's computer |
+
+The image's immutable test inputs are under
+`/opt/cure-ngs/examples/component-tests`. This is intentional: downloading the
+image also downloads the test data. The next command exports a verified copy
+to the host:
+
+```bash
+cure_ngs verify-tutorial-data \
+  | tee "$OUTPUT_DIR/component-test-data.verification.json"
+cure_ngs export-tutorial-data /data/output/component-test-data \
+  | tee "$OUTPUT_DIR/component-test-data.export.json"
+```
+
+The local directory `$OUTPUT_DIR/component-test-data/` now contains the five
+files linked in the review response, the minimal-MAF fixture for the sixth
+component, and three non-empty historical reference outputs. SHA-256 values,
+source URLs, row counts, and privacy notes are in its `manifest.json` and
+`README.md`.
 
 Therefore, when a command writes `/data/output/result.maf` inside the
 container, the user receives `$OUTPUT_DIR/result.maf` locally. The container is
@@ -150,21 +168,31 @@ columns and all 25 records are already in the repository:
 
 ```bash
 cure_ngs inspect-vcf \
-  /examples/public/vcf2maf/test_b37.vcf \
+  /opt/cure-ngs/examples/component-tests/inputs/test_b37.vcf \
   --assembly GRCh37 \
   | tee "$OUTPUT_DIR/public-vcf-inspection.json"
 
 grep '"record_count": 25' "$OUTPUT_DIR/public-vcf-inspection.json"
+
+grep -vc '^#' "$OUTPUT_DIR/component-test-data/inputs/test_b37.vcf"
+grep -v '^#' "$OUTPUT_DIR/component-test-data/expected/test_b37.maf" \
+  | tail -n +2 | wc -l
 ```
+
+Both final commands must print `25`. Therefore the primary VCF example is no
+longer an empty VCF. The corresponding non-empty annotated MAF is immediately
+visible at `component-test-data/expected/test_b37.maf`. It is labelled as a
+historical reference output because regenerating VEP annotations requires the
+external data described in Section 13.
 
 Now split multiallelic records, left-align indels, validate REF alleles, and
 remove exact duplicates from a synthetic VCF:
 
 ```bash
 cure_ngs normalize-vcf \
-  /examples/synthetic/normalize.grch37.vcf \
+  /opt/cure-ngs/examples/synthetic/normalize.grch37.vcf \
   /data/output/normalized.grch37.vcf \
-  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --reference-fasta /opt/cure-ngs/examples/synthetic/tiny.grch37.fa \
   --assembly GRCh37
 
 grep -vc '^#' "$OUTPUT_DIR/normalized.grch37.vcf"
@@ -175,16 +203,19 @@ The last command must print `4`. The adjacent
 versions, and the exact output.
 
 The restored V1.3.3 batch entry point also treats a valid empty panel VCF as an
-auditable negative result:
+auditable negative result. This is a separate edge-case test and is not the
+main MAF example:
 
 ```bash
-mkdir -p "$OUTPUT_DIR/batch"
+mkdir -p "$OUTPUT_DIR/batch-empty-edge-case"
 cure_ngs batch-vcf-to-maf \
-  /examples/synthetic/batch-input /data/output/batch \
-  --reference-config /examples/synthetic/reference-config.reviewer.json \
+  /opt/cure-ngs/examples/synthetic/batch-input \
+  /data/output/batch-empty-edge-case \
+  --reference-config /opt/cure-ngs/examples/synthetic/reference-config.reviewer.json \
   --jobs 1
 
-grep 'VALID_EMPTY' "$OUTPUT_DIR/batch/vcf2maf_batch_summary.json"
+grep 'VALID_EMPTY' \
+  "$OUTPUT_DIR/batch-empty-edge-case/vcf2maf_batch_summary.json"
 ```
 
 ## 6. Component 2: HGVS table to minimal MAF
@@ -195,12 +226,12 @@ network:
 
 ```bash
 cure_ngs hgvs-table-to-minimal-maf \
-  /examples/synthetic/hgvs_to_minimal_input.tsv \
+  /opt/cure-ngs/examples/synthetic/hgvs_to_minimal_input.tsv \
   /data/output/from-hgvs.grch37.maf \
   --failed /data/output/from-hgvs.failed.tsv \
-  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --reference-fasta /opt/cure-ngs/examples/synthetic/tiny.grch37.fa \
   --assembly GRCh37 \
-  --response-cache /examples/synthetic/rest-cache \
+  --response-cache /opt/cure-ngs/examples/synthetic/rest-cache \
   --offline-replay
 
 grep 'synthetic_sample_001' "$OUTPUT_DIR/from-hgvs.grch37.maf"
@@ -217,9 +248,9 @@ VCF. This is the deterministic first half of the re-annotation component:
 ```bash
 mkdir -p "$OUTPUT_DIR/from-minimal"
 cure_ngs minimal-maf-to-vcf \
-  /examples/synthetic/minimal.grch37.maf \
+  /opt/cure-ngs/examples/synthetic/minimal.grch37.maf \
   /data/output/from-minimal \
-  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --reference-fasta /opt/cure-ngs/examples/synthetic/tiny.grch37.fa \
   --assembly GRCh37
 
 grep -vc '^#' \
@@ -234,12 +265,12 @@ human genome.
 ## 8. Component 4: gene-name harmonization
 
 ```bash
-cure_ngs normalize-gene P53 \
-  --gtf /examples/synthetic/genes.gtf \
-  --hgnc /examples/synthetic/hgnc.tsv \
+cure_ngs normalize-gene C11ORF30 \
+  --gtf /opt/cure-ngs/examples/synthetic/genes.gtf \
+  --hgnc /opt/cure-ngs/examples/synthetic/hgnc.tsv \
   | tee "$OUTPUT_DIR/gene.json"
 
-grep '"matched_symbol": "TP53"' "$OUTPUT_DIR/gene.json"
+grep '"matched_symbol": "EMSY"' "$OUTPUT_DIR/gene.json"
 ```
 
 The original token is retained in the JSON while the approved HGNC symbol is
@@ -248,12 +279,12 @@ reported separately.
 ## 9. Component 5: gene-fusion normalization
 
 ```bash
-cure_ngs normalize-fusion EML4-ALK \
-  --gtf /examples/synthetic/genes.gtf \
-  --hgnc /examples/synthetic/hgnc.tsv \
+cure_ngs normalize-fusion ALK-EML4 \
+  --gtf /opt/cure-ngs/examples/synthetic/genes.gtf \
+  --hgnc /opt/cure-ngs/examples/synthetic/hgnc.tsv \
   | tee "$OUTPUT_DIR/fusion.json"
 
-grep '"normalized": "EML4--ALK"' "$OUTPUT_DIR/fusion.json"
+grep '"normalized": "ALK--EML4"' "$OUTPUT_DIR/fusion.json"
 ```
 
 The double hyphen is the canonical directional fusion separator; gene order is
@@ -263,25 +294,27 @@ not silently reversed.
 
 ```bash
 cure_ngs normalize-hgvs-table \
-  /examples/synthetic/hgvs_input.csv \
-  /data/output/hgvs.normalized.csv \
-  --delimiter comma
+  /opt/cure-ngs/examples/component-tests/inputs/hgvs_to_minimal_maf_test.xlsx \
+  /data/output/hgvs_to_minimal_maf_test.current.normalized.xlsx \
+  | tee "$OUTPUT_DIR/hgvs-original-summary.json"
 
-grep 'c.818G>A' "$OUTPUT_DIR/hgvs.normalized.csv"
+grep '"rows": 2625' "$OUTPUT_DIR/hgvs-original-summary.json"
 ```
 
-Inspect both `hgvs.normalized.csv` and its manifest. The original sample ID is
-preserved; only the selected HGVS columns are normalized.
+Inspect both `hgvs_to_minimal_maf_test.current.normalized.xlsx` and its
+manifest. This is an actual result produced from the full original 2,625-row
+test workbook, not a one-row substitute. The original sample ID is preserved;
+only the selected HGVS columns are normalized.
 
 ## 11. Compare the two input routes
 
 ```bash
 mkdir -p "$OUTPUT_DIR/concordance"
 cure_ngs compare-maf-routes /data/output/concordance \
-  --reference-maf /examples/synthetic/concordance_direct.grch37.maf \
-  --query-maf /examples/synthetic/concordance_report.grch37.maf \
+  --reference-maf /opt/cure-ngs/examples/synthetic/concordance_direct.grch37.maf \
+  --query-maf /opt/cure-ngs/examples/synthetic/concordance_report.grch37.maf \
   --reference-require-any HGVSc \
-  --reference-fasta /examples/synthetic/tiny.grch37.fa
+  --reference-fasta /opt/cure-ngs/examples/synthetic/tiny.grch37.fa
 
 grep '"exact_set_agreement_percent": 100.0' \
   "$OUTPUT_DIR/concordance/concordance_summary.json"
@@ -299,6 +332,20 @@ At minimum, the manual run should contain:
 tutorial-output/manual/
 |-- versions.json
 |-- doctor.json
+|-- component-test-data/
+|   |-- manifest.json
+|   |-- inputs/
+|   |   |-- MSKCC_VCCF_test.zip
+|   |   |-- gene_name_test.csv
+|   |   |-- gene_split_test.csv
+|   |   |-- hgvs_to_minimal_maf_test.xlsx
+|   |   |-- minimal_maf_test_normalized.xlsx
+|   |   `-- minimal_maf_from_hgvs_vep_V2.maf
+|   `-- expected/
+|       |-- test_b37.maf
+|       |-- minimal_maf_test_normalized.xlsx
+|       `-- minimal_maf_from_hgvs_vep_V2.vcf2maf.maf
+|-- component-test-summary.tsv
 |-- public-vcf-inspection.json
 |-- normalized.grch37.vcf
 |-- normalized.grch37.vcf.manifest.json
@@ -308,9 +355,9 @@ tutorial-output/manual/
 |   `-- synthetic_sample_001.from_minimal_maf.vcf
 |-- gene.json
 |-- fusion.json
-|-- hgvs.normalized.csv
-|-- hgvs.normalized.csv.manifest.json
-|-- batch/
+|-- hgvs_to_minimal_maf_test.current.normalized.xlsx
+|-- hgvs_to_minimal_maf_test.current.normalized.xlsx.manifest.json
+|-- batch-empty-edge-case/
 |   |-- vcf2maf_batch_summary.json
 |   `-- empty.grch37.maf.manifest.json
 `-- concordance/
@@ -331,7 +378,7 @@ the optional GRCh38-to-GRCh37 chains.
 Select the external directory and require a successful content-aware preflight:
 
 ```bash
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
 REFERENCE_DIR=/path/to/your/reference-store
 CONFIG_DIR="$REPO/config"
 
@@ -370,11 +417,10 @@ The same verified resources can annotate the 25-record public VCF end to end:
 ```bash
 docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --user "$(id -u):$(id -g)" \
-  --volume "$REPO/examples:/examples:ro" \
   --volume "$REFERENCE_DIR:/references:ro" \
   --volume "$OUTPUT_DIR:/data/output" \
   "$FULL_IMAGE" vcf-to-maf \
-  /examples/public/vcf2maf/test_b37.vcf \
+  /opt/cure-ngs/examples/component-tests/inputs/test_b37.vcf \
   /data/output/public-test-b37.maf \
   --source-assembly GRCh37 \
   --source-reference /references/grch37/hg19.fa \

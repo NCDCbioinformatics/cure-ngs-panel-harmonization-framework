@@ -14,12 +14,16 @@ same public and synthetic examples command by command.
 3. Run `bash scripts/run_reviewer_demo.sh` or the PowerShell equivalent.
 4. Confirm the final `Reviewer demonstration passed` message.
 5. Inspect `reviewer-output/<run-id>/versions.json` and `doctor.json`.
-6. Inspect `reviewer-output/<run-id>/batch/vcf2maf_batch_summary.json` and its
-   per-file manifest.
+6. Inspect `reviewer-output/<run-id>/component-test-data/`, including the
+   non-empty `expected/test_b37.maf` and SHA-256 manifest.
+7. Inspect
+   `reviewer-output/<run-id>/batch-empty-edge-case/vcf2maf_batch_summary.json`
+   and its per-file manifest.
 
-This run uses only original synthetic fixtures plus one attributed public
-vcf2maf VCF. Container networking is disabled. It tests all six component
-function groups without downloading a human genome.
+This run exports the original public component inputs and historical reference
+outputs, then uses reference-free deterministic checks for all six component
+function groups. Container networking is disabled. A human genome is not
+downloaded.
 
 ## B. Full VCF-to-MAF annotation test
 
@@ -27,8 +31,9 @@ function groups without downloading a human genome.
 2. Install a GRCh37 FASTA and matching VEP 116 cache by following
    `docs/REFERENCE_DATA.md`.
 3. Run `doctor --profile vcf-to-maf`; require `READY`.
-4. Run the public `examples/public/vcf2maf/test_b37.vcf` with explicit tumor
-   and normal sample IDs.
+4. Run the embedded
+   `/opt/cure-ngs/examples/component-tests/inputs/test_b37.vcf` with explicit
+   tumor and normal sample IDs.
 5. Retain the MAF and generated manifest. Record the resource checksums.
 
 The public VCF contains 25 records and was used in the authors' local testing.
@@ -37,12 +42,17 @@ container/cache pair and manifest therefore define the reproducible result.
 
 ## Expected deterministic assertions
 
-- public GRCh37 VCF: 25 records
+- public GRCh37 VCF and included reference MAF: 25 input records and 25 output
+  rows
+- original six-component test bundle: all SHA-256 checks pass and files are
+  exported to the local output directory
 - synthetic normalized VCF: 4 unique biallelic records
 - offline HGVS route: one cache hit, zero network fetches, one MAF row
 - minimal-MAF route: three VCF records
-- gene alias `P53`: resolves to `TP53`
-- fusion `EML4-ALK`: resolves directionally to `EML4--ALK`
+- gene alias `C11ORF30` from the original CSV: resolves to `EMSY`
+- fusion `ALK-EML4` from the original CSV: resolves directionally to
+  `ALK--EML4`
+- original HGVS workbook: 2,625 rows are written to a new normalized XLSX
 - cross-route synthetic concordance: 100% exact set agreement
 - restored V1.3.3 batch route: one empty GRCh37 VCF is reported as
   `VALID_EMPTY`, with a deterministic MAF and provenance manifest

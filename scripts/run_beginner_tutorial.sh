@@ -13,7 +13,7 @@ elif command -v docker >/dev/null 2>&1; then
 else
   ENGINE="podman"
 fi
-IMAGE="${CURE_NGS_IMAGE:-ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core}"
+IMAGE="${CURE_NGS_IMAGE:-ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core}"
 
 command -v "$ENGINE" >/dev/null 2>&1 || {
   echo "ERROR: Docker or Podman is required." >&2
@@ -41,4 +41,5 @@ bash "$ROOT_DIR/scripts/run_reviewer_demo.sh"
 
 echo
 echo "Next: read docs/BEGINNER_TUTORIAL.md to understand each command and output."
+echo "The exported original inputs and reference outputs are inside component-test-data/."
 echo "The optional full-annotation section explains the external GRCh37/VEP data."

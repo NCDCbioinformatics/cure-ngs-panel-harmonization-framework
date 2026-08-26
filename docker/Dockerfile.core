@@ -31,6 +31,7 @@ RUN groupadd --gid 10001 cure-ngs \
 
 COPY src /opt/cure-ngs/src
 COPY resources /opt/cure-ngs/resources
+COPY examples /opt/cure-ngs/examples
 COPY references/reference-config.example.json /opt/cure-ngs/reference-config.example.json
 
 ENV LC_ALL=C.UTF-8 \
@@ -42,7 +43,7 @@ ENV LC_ALL=C.UTF-8 \
 
 LABEL org.opencontainers.image.title="CURE-NGS Harmonizer Core" \
       org.opencontainers.image.description="Core preprocessing and validation tools for panel NGS harmonization" \
-      org.opencontainers.image.version="0.2.1" \
+      org.opencontainers.image.version="0.2.2" \
       org.opencontainers.image.source="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework" \
       org.opencontainers.image.revision="${SOURCE_REVISION}" \
       org.opencontainers.image.licenses="MIT"

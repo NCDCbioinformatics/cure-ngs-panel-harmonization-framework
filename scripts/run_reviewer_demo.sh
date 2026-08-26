@@ -33,9 +33,9 @@ mkdir -p "$OUTPUT_DIR"
 chmod 0777 "$OUTPUT_DIR"
 
 if [ "${CURE_NGS_SKIP_BUILD:-0}" = "1" ]; then
-  echo "[1/10] Using prebuilt core image $IMAGE"
+  echo "[1/11] Using prebuilt core image $IMAGE"
 else
-  echo "[1/10] Building pinned core image"
+  echo "[1/11] Building pinned core image"
   "$ENGINE" build \
     --file "$ROOT_DIR/docker/Dockerfile.core" \
     --tag "$IMAGE" \
@@ -46,100 +46,106 @@ run_cure_ngs() {
   "$ENGINE" run --rm --network none --read-only \
     --tmpfs /tmp:size=256m,mode=1777 \
     --security-opt "$SECURITY_OPT" \
-    --mount "type=bind,source=$ROOT_DIR/examples,target=/examples,readonly" \
     --mount "type=bind,source=$OUTPUT_DIR,target=/data/output" \
     "$IMAGE" "$@"
 }
 
-verify_sha256() {
-  local checksum_file="$1"
-  if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum --check "$checksum_file"
-  elif command -v shasum >/dev/null 2>&1; then
-    shasum --algorithm 256 --check "$checksum_file"
-  else
-    echo "ERROR: sha256sum or shasum is required." >&2
-    exit 2
-  fi
-}
-
-echo "[2/10] Checking pinned executables"
+echo "[2/11] Checking pinned executables"
 run_cure_ngs versions >"$OUTPUT_DIR/versions.json"
 run_cure_ngs doctor --profile core >"$OUTPUT_DIR/doctor.json"
 grep -q '"status": "READY"' "$OUTPUT_DIR/doctor.json"
 
-echo "[3/10] Inspecting the public GRCh37 vcf2maf fixture"
-(cd "$ROOT_DIR/examples/public/vcf2maf" && verify_sha256 checksums.sha256)
+echo "[3/11] Exporting and verifying the original six-component test bundle"
+run_cure_ngs verify-tutorial-data >"$OUTPUT_DIR/component-test-data.verification.json"
+grep -q '"file_count": 11' "$OUTPUT_DIR/component-test-data.verification.json"
+run_cure_ngs export-tutorial-data /data/output/component-test-data \
+  >"$OUTPUT_DIR/component-test-data.export.json"
+
+echo "[4/11] Inspecting the non-empty public GRCh37 VCF and reference MAF"
 run_cure_ngs inspect-vcf \
-  /examples/public/vcf2maf/test_b37.vcf --assembly GRCh37 \
+  /opt/cure-ngs/examples/component-tests/inputs/test_b37.vcf --assembly GRCh37 \
   >"$OUTPUT_DIR/public-vcf-inspection.json"
 grep -q '"record_count": 25' "$OUTPUT_DIR/public-vcf-inspection.json"
+VCF_RECORDS="$(grep -vc '^#' "$OUTPUT_DIR/component-test-data/inputs/test_b37.vcf")"
+MAF_ROWS="$(grep -v '^#' "$OUTPUT_DIR/component-test-data/expected/test_b37.maf" | tail -n +2 | wc -l | tr -d ' ')"
+test "$VCF_RECORDS" -eq 25
+test "$MAF_ROWS" -eq 25
 
-echo "[4/10] Splitting, left-aligning, and deduplicating a GRCh37 VCF"
+echo "[5/11] Splitting, left-aligning, and deduplicating a GRCh37 VCF"
 run_cure_ngs normalize-vcf \
-  /examples/synthetic/normalize.grch37.vcf \
+  /opt/cure-ngs/examples/synthetic/normalize.grch37.vcf \
   /data/output/normalized.grch37.vcf \
-  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --reference-fasta /opt/cure-ngs/examples/synthetic/tiny.grch37.fa \
   --assembly GRCh37
 test "$(grep -vc '^#' "$OUTPUT_DIR/normalized.grch37.vcf")" -eq 4
 
-echo "[5/10] Replaying HGVS-to-minimal-MAF without network access"
+echo "[6/11] Replaying HGVS-to-minimal-MAF without network access"
 run_cure_ngs hgvs-table-to-minimal-maf \
-  /examples/synthetic/hgvs_to_minimal_input.tsv \
+  /opt/cure-ngs/examples/synthetic/hgvs_to_minimal_input.tsv \
   /data/output/from-hgvs.grch37.maf \
   --failed /data/output/from-hgvs.failed.tsv \
-  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --reference-fasta /opt/cure-ngs/examples/synthetic/tiny.grch37.fa \
   --assembly GRCh37 \
-  --response-cache /examples/synthetic/rest-cache \
+  --response-cache /opt/cure-ngs/examples/synthetic/rest-cache \
   --offline-replay
 grep -q $'GENE\tsynthetic_sample_001\tchr1\t10\t10\tC\tT\tGRCh37' \
   "$OUTPUT_DIR/from-hgvs.grch37.maf"
 
-echo "[6/10] Converting minimal MAF to a reference-valid VCF"
+echo "[7/11] Converting minimal MAF to a reference-valid VCF"
 mkdir -p "$OUTPUT_DIR/from-minimal"
 chmod 0777 "$OUTPUT_DIR/from-minimal"
 run_cure_ngs minimal-maf-to-vcf \
-  /examples/synthetic/minimal.grch37.maf \
+  /opt/cure-ngs/examples/synthetic/minimal.grch37.maf \
   /data/output/from-minimal \
-  --reference-fasta /examples/synthetic/tiny.grch37.fa \
+  --reference-fasta /opt/cure-ngs/examples/synthetic/tiny.grch37.fa \
   --assembly GRCh37
 test "$(grep -vc '^#' "$OUTPUT_DIR/from-minimal/synthetic_sample_001.from_minimal_maf.vcf")" -eq 3
 
-echo "[7/10] Testing gene, fusion, and tabular HGVS normalization"
-run_cure_ngs normalize-gene P53 \
-  --gtf /examples/synthetic/genes.gtf \
-  --hgnc /examples/synthetic/hgnc.tsv >"$OUTPUT_DIR/gene.json"
-grep -q '"matched_symbol": "TP53"' "$OUTPUT_DIR/gene.json"
-run_cure_ngs normalize-fusion EML4-ALK \
-  --gtf /examples/synthetic/genes.gtf \
-  --hgnc /examples/synthetic/hgnc.tsv >"$OUTPUT_DIR/fusion.json"
-grep -q '"normalized": "EML4--ALK"' "$OUTPUT_DIR/fusion.json"
+echo "[8/11] Running original gene, fusion, and HGVS-table examples"
+run_cure_ngs normalize-gene C11ORF30 \
+  --gtf /opt/cure-ngs/examples/synthetic/genes.gtf \
+  --hgnc /opt/cure-ngs/examples/synthetic/hgnc.tsv >"$OUTPUT_DIR/gene.json"
+grep -q '"matched_symbol": "EMSY"' "$OUTPUT_DIR/gene.json"
+run_cure_ngs normalize-fusion ALK-EML4 \
+  --gtf /opt/cure-ngs/examples/synthetic/genes.gtf \
+  --hgnc /opt/cure-ngs/examples/synthetic/hgnc.tsv >"$OUTPUT_DIR/fusion.json"
+grep -q '"normalized": "ALK--EML4"' "$OUTPUT_DIR/fusion.json"
 run_cure_ngs normalize-hgvs-table \
-  /examples/synthetic/hgvs_input.csv \
-  /data/output/hgvs.normalized.csv --delimiter comma
-grep -q 'c.818G>A' "$OUTPUT_DIR/hgvs.normalized.csv"
+  /opt/cure-ngs/examples/component-tests/inputs/hgvs_to_minimal_maf_test.xlsx \
+  /data/output/hgvs_to_minimal_maf_test.current.normalized.xlsx \
+  >"$OUTPUT_DIR/hgvs-original-summary.json"
+grep -q '"rows": 2625' "$OUTPUT_DIR/hgvs-original-summary.json"
 
-echo "[8/10] Calculating exact cross-route concordance"
+echo "[9/11] Calculating exact cross-route concordance"
 mkdir -p "$OUTPUT_DIR/concordance"
 chmod 0777 "$OUTPUT_DIR/concordance"
 run_cure_ngs compare-maf-routes /data/output/concordance \
-  --reference-maf /examples/synthetic/concordance_direct.grch37.maf \
-  --query-maf /examples/synthetic/concordance_report.grch37.maf \
+  --reference-maf /opt/cure-ngs/examples/synthetic/concordance_direct.grch37.maf \
+  --query-maf /opt/cure-ngs/examples/synthetic/concordance_report.grch37.maf \
   --reference-require-any HGVSc \
-  --reference-fasta /examples/synthetic/tiny.grch37.fa
+  --reference-fasta /opt/cure-ngs/examples/synthetic/tiny.grch37.fa
 grep -q '"exact_set_agreement_percent": 100.0' \
   "$OUTPUT_DIR/concordance/concordance_summary.json"
 
-echo "[9/10] Exercising restored V1.3.3 batch handling for an empty panel VCF"
-mkdir -p "$OUTPUT_DIR/batch"
-chmod 0777 "$OUTPUT_DIR/batch"
+echo "[10/11] Separately testing the V1.3.3 valid-empty-VCF edge case"
+mkdir -p "$OUTPUT_DIR/batch-empty-edge-case"
+chmod 0777 "$OUTPUT_DIR/batch-empty-edge-case"
 run_cure_ngs batch-vcf-to-maf \
-  /examples/synthetic/batch-input /data/output/batch \
-  --reference-config /examples/synthetic/reference-config.reviewer.json \
+  /opt/cure-ngs/examples/synthetic/batch-input /data/output/batch-empty-edge-case \
+  --reference-config /opt/cure-ngs/examples/synthetic/reference-config.reviewer.json \
   --jobs 1
-grep -q 'VALID_EMPTY' "$OUTPUT_DIR/batch/vcf2maf_batch_summary.json"
-test -s "$OUTPUT_DIR/batch/empty.grch37.maf.manifest.json"
+grep -q 'VALID_EMPTY' "$OUTPUT_DIR/batch-empty-edge-case/vcf2maf_batch_summary.json"
+test -s "$OUTPUT_DIR/batch-empty-edge-case/empty.grch37.maf.manifest.json"
 
-echo "[10/10] $COMPLETION_MESSAGE"
+printf 'component\toriginal_input_rows\treference_output_rows\tquick_test\n' >"$OUTPUT_DIR/component-test-summary.tsv"
+printf 'panel_VCF_vcf2maf_pipeline\t25\t25\tnon-empty VCF inspected; full MAF included\n' >>"$OUTPUT_DIR/component-test-summary.tsv"
+printf 'HGVS_to_minimal_MAF_pipeline\t2625\t2113\toffline synthetic HGVS conversion passed\n' >>"$OUTPUT_DIR/component-test-summary.tsv"
+printf 'minimal_MAF_to_annotated_MAF_pipeline\t2113\t2054\tminimal-MAF-to-VCF conversion passed\n' >>"$OUTPUT_DIR/component-test-summary.tsv"
+printf 'gene_name_harmonization\t324\t324\tC11ORF30 to EMSY passed\n' >>"$OUTPUT_DIR/component-test-summary.tsv"
+printf 'gene_fusion_normalizer\t274\tNA\tALK-EML4 to ALK--EML4 passed\n' >>"$OUTPUT_DIR/component-test-summary.tsv"
+printf 'hgvs_normerlizer\t2625\t2625\tfull original XLSX normalization passed\n' >>"$OUTPUT_DIR/component-test-summary.tsv"
+
+echo "[11/11] $COMPLETION_MESSAGE"
 echo "Container /data/output was saved to the local host directory below."
 echo "Local results (host): $OUTPUT_DIR"
+echo "Non-empty VCF reference MAF: $OUTPUT_DIR/component-test-data/expected/test_b37.maf"

@@ -23,15 +23,28 @@ Pull the public release images without registry login and retain their complete
 GHCR names:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
 docker pull "$CORE_IMAGE"
 docker pull "$FULL_IMAGE"
 docker run --rm "$CORE_IMAGE" doctor --profile core
 docker run --rm "$FULL_IMAGE" versions
 ```
 
-The short local name `cure-ngs-harmonizer:0.2.1` is used below only for an
+The same image download includes the original six-component public test
+bundle. Export it to a local folder with:
+
+```bash
+mkdir -p tutorial-data
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD/tutorial-data:/data/output" \
+  "$CORE_IMAGE" export-tutorial-data /data/output/component-test-data
+```
+
+This produces non-empty VCF/MAF examples, the original XLSX/CSV files, and a
+SHA-256/source manifest under `tutorial-data/component-test-data/`.
+
+The short local name `cure-ngs-harmonizer:0.2.2` is used below only for an
 image built from source with that tag. It is not an alias automatically created
 by `docker pull ghcr.io/ncdcbioinformatics/...`.
 
@@ -39,9 +52,9 @@ Build and smoke test with Docker or Podman:
 
 ```bash
 docker build --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
-  -f docker/Dockerfile -t cure-ngs-harmonizer:0.2.1 .
-docker run --rm cure-ngs-harmonizer:0.2.1 versions
-docker run --rm cure-ngs-harmonizer:0.2.1 doctor --profile core
+  -f docker/Dockerfile -t cure-ngs-harmonizer:0.2.2 .
+docker run --rm cure-ngs-harmonizer:0.2.2 versions
+docker run --rm cure-ngs-harmonizer:0.2.2 doctor --profile core
 ```
 
 `SOURCE_REVISION` is stored in the OCI `org.opencontainers.image.revision`
@@ -53,7 +66,7 @@ The table normalizers are included in the same non-root image. For example:
 docker run --rm \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
-  cure-ngs-harmonizer:0.2.1 \
+  cure-ngs-harmonizer:0.2.2 \
   normalize-hgvs-table /data/input/report.csv /data/output/report.normalized.csv \
   --delimiter comma
 ```
@@ -65,7 +78,7 @@ docker run --rm \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.1 \
+  cure-ngs-harmonizer:0.2.2 \
   normalize-vcf /data/input/sample.vcf /data/output/sample.normalized.vcf.gz \
   --reference-fasta /references/hg19.fa --assembly GRCh37
 ```
@@ -77,7 +90,7 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.1 batch-vcf-to-maf \
+  cure-ngs-harmonizer:0.2.2 batch-vcf-to-maf \
   /data/input /data/output \
   --reference-config /references/reference-config.json --jobs 4
 ```

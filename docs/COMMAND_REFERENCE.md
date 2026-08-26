@@ -12,11 +12,34 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1 COMMAND OPTIONS
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2 COMMAND OPTIONS
 ```
 
 All paths passed to `COMMAND` are container paths, not host paths. Replace the
 three host directories without editing source code.
+
+## Export the six-component test data
+
+Both image variants contain the original public inputs and non-empty reference
+outputs used by the component repositories. Copy them to the host and verify
+their SHA-256 manifest:
+
+```bash
+mkdir -p output
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD/output:/data/output" \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core \
+  verify-tutorial-data
+
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD/output:/data/output" \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core \
+  export-tutorial-data /data/output/component-test-data
+```
+
+The exported `manifest.json` maps each file to its source component and records
+row counts. `expected/test_b37.maf` contains 25 annotated rows; the valid-empty
+VCF test is stored and reported separately.
 
 ## VCF or gVCF route
 

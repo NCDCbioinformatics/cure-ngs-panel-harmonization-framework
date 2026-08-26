@@ -116,7 +116,7 @@ The full image contains VEP, vcf2maf, Picard, bcftools, SAMtools, Perl, Java,
 and the Python application. It does not contain the large genome resources.
 
 ```bash
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
 docker build \
   --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   --file docker/Dockerfile \
@@ -127,7 +127,7 @@ The core image is smaller and is sufficient for the network-free reviewer
 walkthrough, normalization, table processing, and concordance:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
 docker build \
   --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   --file docker/Dockerfile.core \
@@ -137,7 +137,7 @@ docker build \
 Confirm that the image starts and inspect every detected tool:
 
 ```bash
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
 docker run --rm "$FULL_IMAGE" versions
 docker run --rm "$FULL_IMAGE" --help
 ```
@@ -146,8 +146,8 @@ Tagged releases publish immutable full and core images to GitHub Container
 Registry. They can be obtained without a local build:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.1
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
 docker pull "$CORE_IMAGE"
 docker pull "$FULL_IMAGE"
 docker run --rm "$CORE_IMAGE" --version
@@ -156,7 +156,23 @@ docker run --rm "$FULL_IMAGE" versions
 
 These public images do not require `docker login`. Keep the complete
 `ghcr.io/ncdcbioinformatics/...` name in subsequent `docker run` commands; the
-short name `cure-ngs-harmonizer:0.2.1` is a separate local/Docker Hub name.
+short name `cure-ngs-harmonizer:0.2.2` is a separate local/Docker Hub name.
+
+Both images also contain the public six-component test bundle. Confirm it is
+present and export an ordinary host-side copy before using the beginner
+tutorial:
+
+```bash
+mkdir -p tutorial-data
+docker run --rm "$CORE_IMAGE" verify-tutorial-data
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD/tutorial-data:/data/output" \
+  "$CORE_IMAGE" export-tutorial-data /data/output/component-test-data
+```
+
+The exported directory includes original VCF/XLSX/CSV inputs, SHA-256
+provenance, and non-empty historical MAF outputs. Large hg19/GRCh37 and VEP
+resources remain external.
 
 Run the public-install validator to pull both images, inspect their repository
 digests and dependency versions, run the core preflight, and execute the entire
