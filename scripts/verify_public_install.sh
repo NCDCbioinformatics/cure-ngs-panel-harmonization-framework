@@ -18,11 +18,24 @@ else
   exit 2
 fi
 
-if ! "$ENGINE" info >/dev/null 2>&1; then
-  echo "ERROR: $ENGINE is installed, but its daemon/socket is not available." >&2
-  echo "Run '$ENGINE info' and resolve that error before downloading CURE-NGS." >&2
-  echo "Native Ubuntu Docker: sudo systemctl enable --now docker" >&2
-  echo "WSL Docker Engine without systemd: sudo service docker start" >&2
+if ! ENGINE_INFO="$("$ENGINE" info 2>&1)"; then
+  echo "ERROR: $ENGINE is installed, but its daemon/socket is not accessible." >&2
+  echo "$ENGINE_INFO" >&2
+  if [[ "${ENGINE_INFO,,}" == *"permission denied"* ]]; then
+    echo >&2
+    echo "The current Linux/WSL user cannot access the Docker socket." >&2
+    echo "Run once:" >&2
+    echo "  sudo groupadd -f docker" >&2
+    echo '  sudo usermod -aG docker "$USER"' >&2
+    echo "  newgrp docker" >&2
+    echo "  docker info" >&2
+    echo "For WSL, close its terminals and run 'wsl --shutdown' in Windows PowerShell if needed." >&2
+    echo "Do not use chmod 777 on /var/run/docker.sock." >&2
+  else
+    echo "Run '$ENGINE info' and resolve that error before downloading CURE-NGS." >&2
+    echo "Native Ubuntu Docker: sudo systemctl enable --now docker" >&2
+    echo "WSL Docker Engine without systemd: sudo service docker start" >&2
+  fi
   exit 2
 fi
 

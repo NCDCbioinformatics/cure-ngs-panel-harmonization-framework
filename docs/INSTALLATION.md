@@ -67,15 +67,24 @@ sudo systemctl enable --now docker
 sudo docker run --rm hello-world
 ```
 
-Docker works through `sudo` at this point. To run this repository's scripts as
-the current user, optionally add that user to the Docker group, then start a
-new group session:
+Docker works through `sudo` at this point. Non-root Docker access is required
+to run this repository's tutorial and verification scripts as written. Add the
+current user to the Docker group, then start a new group session:
 
 ```bash
+sudo groupadd -f docker
 sudo usermod -aG docker "$USER"
 newgrp docker
+id -nG
+ls -l /var/run/docker.sock
 docker info
 ```
+
+The output of `id -nG` must include `docker`, and `docker info` must show both
+the Client and Server sections. If `sudo docker info` succeeds but `docker
+info` returns `permission denied ... /var/run/docker.sock`, the daemon is
+healthy and only the current user's group membership is missing or has not yet
+been refreshed. Log out and back in if `newgrp docker` is not retained.
 
 Membership in the Docker group grants root-level host privileges. On a managed
 institutional server, ask the administrator whether `sudo`, rootless Docker,
@@ -85,7 +94,9 @@ WSL 2 is a different case. If Docker Desktop provides the daemon, enable WSL
 integration for the Ubuntu distribution and do not install a second daemon
 inside it. If Docker Engine was intentionally installed inside WSL and systemd
 is disabled, use `sudo service docker start`. In either case, do not continue
-until both `docker info` and `docker run --rm hello-world` succeed.
+until both `docker info` and `docker run --rm hello-world` succeed. If a WSL
+terminal still has the old group membership, close all WSL terminals, run
+`wsl --shutdown` in Windows PowerShell, and reopen Ubuntu.
 
 ## 2. Obtain a reproducible source revision
 
