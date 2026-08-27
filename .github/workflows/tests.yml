@@ -109,6 +109,7 @@ jobs:
       - name: Reproduce the manuscript V1.3.3 folder and log contract
         run: |
           mkdir -p ci-output/KOSMOS_VCF/VCF_ALL
+          chmod 0777 ci-output/KOSMOS_VCF
           cp examples/synthetic/batch-input/empty.grch37.vcf \
             ci-output/KOSMOS_VCF/VCF_ALL/
           docker run --rm --read-only --tmpfs /tmp:size=64m \
