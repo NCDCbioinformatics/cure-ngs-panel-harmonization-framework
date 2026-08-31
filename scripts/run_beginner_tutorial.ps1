@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Engine = $env:CONTAINER_ENGINE,
-    [string]$Image = $(if ($env:CURE_NGS_IMAGE) { $env:CURE_NGS_IMAGE } else { "ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core" })
+    [string]$Image = $(if ($env:CURE_NGS_IMAGE) { $env:CURE_NGS_IMAGE } else { "ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core" })
 )
 
 $ErrorActionPreference = "Stop"

@@ -23,8 +23,8 @@ Pull the public release images without registry login and retain their complete
 GHCR names:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.2
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3
 docker pull "$CORE_IMAGE"
 docker pull "$FULL_IMAGE"
 docker run --rm "$CORE_IMAGE" doctor --profile core
@@ -44,7 +44,18 @@ docker run --rm --user "$(id -u):$(id -g)" \
 This produces non-empty VCF/MAF examples, the original XLSX/CSV files, and a
 SHA-256/source manifest under `tutorial-data/component-test-data/`.
 
-The short local name `cure-ngs-harmonizer:0.2.2` is used below only for an
+Create the exact manuscript/V1.3.3 four-directory example at the same time:
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" \
+  --volume "$PWD/tutorial-data:/data/output" \
+  "$CORE_IMAGE" export-v1.3.3-example /data/output/KOSMOS_VCF
+```
+
+The exported MAF is explicitly marked as a validated bundled reference output,
+not a new VEP run.
+
+The short local name `cure-ngs-harmonizer:0.2.3` is used below only for an
 image built from source with that tag. It is not an alias automatically created
 by `docker pull ghcr.io/ncdcbioinformatics/...`.
 
@@ -52,9 +63,9 @@ Build and smoke test with Docker or Podman:
 
 ```bash
 docker build --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
-  -f docker/Dockerfile -t cure-ngs-harmonizer:0.2.2 .
-docker run --rm cure-ngs-harmonizer:0.2.2 versions
-docker run --rm cure-ngs-harmonizer:0.2.2 doctor --profile core
+  -f docker/Dockerfile -t cure-ngs-harmonizer:0.2.3 .
+docker run --rm cure-ngs-harmonizer:0.2.3 versions
+docker run --rm cure-ngs-harmonizer:0.2.3 doctor --profile core
 ```
 
 `SOURCE_REVISION` is stored in the OCI `org.opencontainers.image.revision`
@@ -66,7 +77,7 @@ The table normalizers are included in the same non-root image. For example:
 docker run --rm \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
-  cure-ngs-harmonizer:0.2.2 \
+  cure-ngs-harmonizer:0.2.3 \
   normalize-hgvs-table /data/input/report.csv /data/output/report.normalized.csv \
   --delimiter comma
 ```
@@ -78,7 +89,7 @@ docker run --rm \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.2 \
+  cure-ngs-harmonizer:0.2.3 \
   normalize-vcf /data/input/sample.vcf /data/output/sample.normalized.vcf.gz \
   --reference-fasta /references/hg19.fa --assembly GRCh37
 ```
@@ -86,14 +97,20 @@ docker run --rm \
 Run a heterogeneous directory with ordered FASTA and liftover-chain fallback:
 
 ```bash
+mkdir -p "$PWD/KOSMOS_VCF/VCF_ALL"
+# Copy input VCF/gVCF files into KOSMOS_VCF/VCF_ALL.
 docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
-  --volume "$PWD/input:/data/input:ro" \
-  --volume "$PWD/output:/data/output" \
+  --user "$(id -u):$(id -g)" \
+  --volume "$PWD/KOSMOS_VCF:/data/KOSMOS_VCF" \
   --volume "$PWD/references:/references:ro" \
-  cure-ngs-harmonizer:0.2.2 batch-vcf-to-maf \
-  /data/input /data/output \
+  cure-ngs-harmonizer:0.2.3 batch-vcf-to-maf \
+  --workspace-root /data/KOSMOS_VCF \
   --reference-config /references/reference-config.json --jobs 4
 ```
+
+This automatically creates `VCF_ALL_LOG`, `VCF_ALL_MAF`, and `VCF_ALL_TMP`.
+The MAF directory contains only `*.maf`; the exact nine-column compatibility
+TSV, structured summary, and manifests are kept under `VCF_ALL_LOG`.
 
 For the end-to-end `vcf-to-maf` command, the target assembly defaults to
 GRCh37/hg19 to match the current CURE-NGS Korean clinical-panel deployment.

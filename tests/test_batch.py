@@ -13,6 +13,7 @@ from cure_ngs.batch import (
     discover_vcf_inputs,
     infer_sample_assignment,
     normalize_maf_contigs,
+    prepare_v133_workspace,
     repair_vcf_structure,
     rewrite_contigs,
     safe_output_stem,
@@ -194,6 +195,69 @@ def test_batch_empty_vcf_creates_auditable_empty_maf(tmp_path: Path) -> None:
     assert Path(result.items[0].manifest).is_file()
 
 
+def test_v133_workspace_layout_matches_manuscript_and_legacy_log(tmp_path: Path) -> None:
+    workspace = prepare_v133_workspace(tmp_path / "KOSMOS_VCF")
+    (workspace.input_directory / "negative.vcf").write_text(
+        "##fileformat=VCFv4.2\n"
+        "##reference=GRCh37\n"
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n",
+        encoding="utf-8",
+    )
+
+    result = batch_vcf_to_maf(
+        workspace.input_directory,
+        workspace.maf_directory,
+        bundle=_bundle(tmp_path),
+        jobs=1,
+        work_directory=workspace.temporary_directory,
+        log_directory=workspace.log_directory,
+        manifest_directory=workspace.manifest_directory,
+        v133_layout=True,
+    )
+
+    assert {path.name for path in workspace.root.iterdir()} == {
+        "VCF_ALL",
+        "VCF_ALL_LOG",
+        "VCF_ALL_MAF",
+        "VCF_ALL_TMP",
+    }
+    assert [path.name for path in workspace.maf_directory.iterdir()] == [
+        "negative.maf"
+    ]
+    assert Path(result.items[0].manifest).parent == workspace.manifest_directory
+    assert Path(result.log_tsv).parent == workspace.log_directory
+    assert Path(result.summary_json).parent == workspace.log_directory
+    lines = Path(result.log_tsv).read_text(encoding="utf-8").splitlines()
+    assert lines[0].split("\t") == [
+        "datetime",
+        "vcf_path",
+        "sample_tag8",
+        "ref_info",
+        "is_gvcf",
+        "has_normal",
+        "status",
+        "message",
+        "final_vcf",
+    ]
+    assert lines[1].split("\t")[6:8] == [
+        "SUCCESS",
+        "VCF has no variants; created empty MAF header",
+    ]
+
+    batch_vcf_to_maf(
+        workspace.input_directory,
+        workspace.maf_directory,
+        bundle=_bundle(tmp_path),
+        jobs=1,
+        work_directory=workspace.temporary_directory,
+        log_directory=workspace.log_directory,
+        manifest_directory=workspace.manifest_directory,
+        v133_layout=True,
+        overwrite=True,
+    )
+    assert len(Path(result.log_tsv).read_text(encoding="utf-8").splitlines()) == 3
+
+
 def test_batch_retries_fasta_candidates(tmp_path: Path) -> None:
     input_dir = tmp_path / "input"
     input_dir.mkdir()
@@ -240,6 +304,67 @@ def test_batch_retries_fasta_candidates(tmp_path: Path) -> None:
     ]
 
 
+def test_v133_nonempty_run_places_compatibility_artifacts_in_tmp(
+    tmp_path: Path,
+) -> None:
+    workspace = prepare_v133_workspace(tmp_path / "KOSMOS_VCF")
+    (workspace.input_directory / "sample.vcf").write_text(VCF, encoding="utf-8")
+
+    def fake_normalize(
+        input_path: str | Path,
+        output_path: str | Path,
+        **_: object,
+    ) -> NormalizationRun:
+        shutil.copyfile(input_path, output_path)
+        return NormalizationRun((), "bcftools mock", ())
+
+    def fake_annotate(
+        input_path: str | Path,
+        output_path: str | Path,
+        **kwargs: object,
+    ) -> AnnotationRun:
+        Path(output_path).write_text(
+            "NCBI_Build\tChromosome\tStart_Position\tReference_Allele\t"
+            "Tumor_Seq_Allele2\tTumor_Sample_Barcode\n"
+            "GRCh37\t1\t10\tA\tC\tsample\n",
+            encoding="utf-8",
+        )
+        Path(kwargs["stdout_log"]).write_text("stdout\n", encoding="utf-8")
+        Path(kwargs["stderr_log"]).write_text("stderr\n", encoding="utf-8")
+        assert Path(kwargs["temporary_directory"]) == workspace.temporary_directory
+        return AnnotationRun(
+            (), "SUCCESS", 1, 1, "GRCh37", "sample", "TUMOR", None, None, 116, "abc"
+        )
+
+    with patch("cure_ngs.batch.normalize_vcf", side_effect=fake_normalize), patch(
+        "cure_ngs.batch.annotate_vcf", side_effect=fake_annotate
+    ):
+        result = batch_vcf_to_maf(
+            workspace.input_directory,
+            workspace.maf_directory,
+            bundle=_bundle(tmp_path),
+            jobs=1,
+            work_directory=workspace.temporary_directory,
+            log_directory=workspace.log_directory,
+            manifest_directory=workspace.manifest_directory,
+            v133_layout=True,
+        )
+
+    assert result.failed == 0
+    assert [path.name for path in workspace.maf_directory.iterdir()] == ["sample.maf"]
+    assert (workspace.temporary_directory / ".lock.sample.vcf2maf").is_file()
+    assert (
+        workspace.temporary_directory / "sample.vcf2maf.bad.stdout.log"
+    ).read_text(encoding="utf-8") == "stdout\n"
+    assert (
+        workspace.temporary_directory / "sample.vcf2maf.bad.stderr.log"
+    ).read_text(encoding="utf-8") == "stderr\n"
+    assert Path(result.items[0].manifest).parent == workspace.manifest_directory
+    log_row = Path(result.log_tsv).read_text(encoding="utf-8").splitlines()[1]
+    assert "GRCh37+bad" in log_row
+    assert "vcf2maf completed with ref=bad" in log_row
+
+
 def test_cli_parser_exposes_batch_bundle_options() -> None:
     from cure_ngs.cli import build_parser
 
@@ -256,3 +381,16 @@ def test_cli_parser_exposes_batch_bundle_options() -> None:
     assert args.jobs == 4
     assert args.sample_tag_length == 8
     assert args.target_assembly is None
+
+    workspace_args = build_parser().parse_args(
+        [
+            "batch-vcf-to-maf",
+            "--workspace-root",
+            "/data/KOSMOS_VCF",
+            "--reference-config",
+            "/references/reference-config.json",
+        ]
+    )
+    assert workspace_args.input_directory is None
+    assert workspace_args.output_directory is None
+    assert workspace_args.workspace_root == "/data/KOSMOS_VCF"

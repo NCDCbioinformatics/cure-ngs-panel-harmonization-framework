@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "bundle_version": "0.2.2",
+  "bundle_version": "0.2.3",
   "title": "CURE-NGS original six-component public test bundle",
   "privacy": "Public software fixtures with generic test identifiers; no patient-level data",
   "components": [

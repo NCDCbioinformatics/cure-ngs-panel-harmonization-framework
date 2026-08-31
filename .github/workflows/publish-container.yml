@@ -1,14 +1,15 @@
 name: Publish container images
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
         description: Image version without a leading v
         required: true
-        default: 0.2.2
+        default: 0.2.3
 
 permissions:
   contents: read
@@ -40,7 +41,7 @@ jobs:
         env:
           DISPATCH_VERSION: ${{ inputs.version }}
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
             value="${GITHUB_REF_NAME#v}"
           else
             value="${DISPATCH_VERSION#v}"

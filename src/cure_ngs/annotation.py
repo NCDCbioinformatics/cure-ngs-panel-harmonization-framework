@@ -114,6 +114,8 @@ def annotate_vcf(
     vcf_normal_id: str | None = None,
     forks: int = 1,
     temporary_directory: str | Path | None = None,
+    stdout_log: str | Path | None = None,
+    stderr_log: str | Path | None = None,
 ) -> AnnotationRun:
     if forks < 1:
         raise ValueError("VEP forks must be at least 1")
@@ -192,14 +194,29 @@ def annotate_vcf(
             ]
         )
 
-    subprocess.run(
+    completed = subprocess.run(
         command,
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
     )
+    if stdout_log is not None:
+        stdout_path = Path(stdout_log)
+        stdout_path.parent.mkdir(parents=True, exist_ok=True)
+        stdout_path.write_text(completed.stdout or "", encoding="utf-8")
+    if stderr_log is not None:
+        stderr_path = Path(stderr_log)
+        stderr_path.parent.mkdir(parents=True, exist_ok=True)
+        stderr_path.write_text(completed.stderr or "", encoding="utf-8")
+    if completed.returncode != 0:
+        raise subprocess.CalledProcessError(
+            completed.returncode,
+            command,
+            output=completed.stdout,
+            stderr=completed.stderr,
+        )
     header, output_rows = inspect_maf(output_path)
     if inspection.record_count > 0 and output_rows == 0:
         raise ValueError(
