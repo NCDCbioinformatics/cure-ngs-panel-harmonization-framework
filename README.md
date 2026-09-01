@@ -437,6 +437,7 @@ versioned behavioral and development provenance.
 
 - Manuscript-ready declarations: [docs/MANUSCRIPT_DECLARATIONS.md](docs/MANUSCRIPT_DECLARATIONS.md)
 - Software inventory summary: [docs/SOFTWARE_INVENTORY.md](docs/SOFTWARE_INVENTORY.md)
+- Account-wide version synchronization audit: [docs/ACCOUNT_VERSION_AUDIT.md](docs/ACCOUNT_VERSION_AUDIT.md)
 - Citation metadata: [CITATION.cff](CITATION.cff)
 - Data availability note: [data/README.md](data/README.md)
 - Public and synthetic reviewer data: [examples/README.md](examples/README.md)
