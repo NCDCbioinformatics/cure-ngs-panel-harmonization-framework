@@ -137,8 +137,8 @@ cure_ngs verify-tutorial-data \
   | tee "$OUTPUT_DIR/component-test-data.verification.json"
 cure_ngs export-tutorial-data /data/output/component-test-data \
   | tee "$OUTPUT_DIR/component-test-data.export.json"
-cure_ngs export-v1.3.3-example /data/output/KOSMOS_VCF \
-  | tee "$OUTPUT_DIR/KOSMOS_VCF.reference-export.json"
+cure_ngs export-v1.3.3-example /data/output/NGS_VCF \
+  | tee "$OUTPUT_DIR/NGS_VCF.reference-export.json"
 ```
 
 The local directory `$OUTPUT_DIR/component-test-data/` now contains the five
@@ -151,7 +151,7 @@ The second export creates the exact top-level layout shown in the manuscript
 and used by `NCDC_batch_vcf2maf_V.1.3.3_github`:
 
 ```text
-$OUTPUT_DIR/KOSMOS_VCF/
+$OUTPUT_DIR/NGS_VCF/
 |-- VCF_ALL/
 |   `-- test_b37.vcf
 |-- VCF_ALL_LOG/
@@ -162,7 +162,8 @@ $OUTPUT_DIR/KOSMOS_VCF/
 `-- VCF_ALL_TMP/
 ```
 
-`test_b37.vcf` has 25 records and `test_b37.maf` has 25 data rows. The
+`VCF_ALL/test_b37.vcf` is copied automatically and has 25 records;
+`VCF_ALL_MAF/test_b37.maf` has 25 data rows. The
 `REFERENCE_OUTPUT` status and `reference-output.json` make clear that this MAF
 is the validated bundled historical result; the export command does not claim
 to have rerun VEP. Section 13 shows the real annotation command.
@@ -231,17 +232,17 @@ nine-column legacy-compatible log to `VCF_ALL_LOG`, keeps manifests under the
 log directory, and reserves `VCF_ALL_TMP` for processed/temporary files:
 
 ```bash
-mkdir -p "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL"
+mkdir -p "$OUTPUT_DIR/NGS_VCF_RUNTIME_TEST/VCF_ALL"
 cp examples/synthetic/batch-input/empty.grch37.vcf \
-  "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL/"
+  "$OUTPUT_DIR/NGS_VCF_RUNTIME_TEST/VCF_ALL/"
 cure_ngs batch-vcf-to-maf \
-  --workspace-root /data/output/KOSMOS_VCF_RUNTIME_TEST \
+  --workspace-root /data/output/NGS_VCF_RUNTIME_TEST \
   --reference-config /opt/cure-ngs/examples/synthetic/reference-config.reviewer.json \
   --jobs 1
 
-find "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST" -maxdepth 3 -type f -print
+find "$OUTPUT_DIR/NGS_VCF_RUNTIME_TEST" -maxdepth 3 -type f -print
 grep $'SUCCESS\tVCF has no variants; created empty MAF header' \
-  "$OUTPUT_DIR/KOSMOS_VCF_RUNTIME_TEST/VCF_ALL_LOG/vcf2maf_batch_log.tsv"
+  "$OUTPUT_DIR/NGS_VCF_RUNTIME_TEST/VCF_ALL_LOG/vcf2maf_batch_log.tsv"
 ```
 
 ## 6. Component 2: HGVS table to minimal MAF
@@ -372,12 +373,12 @@ tutorial-output/manual/
 |       |-- minimal_maf_test_normalized.xlsx
 |       `-- minimal_maf_from_hgvs_vep_V2.vcf2maf.maf
 |-- component-test-summary.tsv
-|-- KOSMOS_VCF/
+|-- NGS_VCF/
 |   |-- VCF_ALL/test_b37.vcf
 |   |-- VCF_ALL_LOG/vcf2maf_batch_log.tsv
 |   |-- VCF_ALL_MAF/test_b37.maf
 |   `-- VCF_ALL_TMP/
-|-- KOSMOS_VCF_RUNTIME_TEST/
+|-- NGS_VCF_RUNTIME_TEST/
 |   |-- VCF_ALL/empty.grch37.vcf
 |   |-- VCF_ALL_LOG/
 |   |   |-- vcf2maf_batch_log.tsv
@@ -452,9 +453,9 @@ The same verified resources can annotate the 25-record public VCF end to end
 while producing the exact manuscript/V1.3.3 directory structure:
 
 ```bash
-mkdir -p "$OUTPUT_DIR/KOSMOS_VCF_FULL_RUN/VCF_ALL"
+mkdir -p "$OUTPUT_DIR/NGS_VCF_FULL_RUN/VCF_ALL"
 cp "$OUTPUT_DIR/component-test-data/inputs/test_b37.vcf" \
-  "$OUTPUT_DIR/KOSMOS_VCF_FULL_RUN/VCF_ALL/"
+  "$OUTPUT_DIR/NGS_VCF_FULL_RUN/VCF_ALL/"
 
 docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --user "$(id -u):$(id -g)" \
@@ -462,11 +463,11 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$CONFIG_DIR:/config:ro" \
   --volume "$OUTPUT_DIR:/data/output" \
   "$FULL_IMAGE" batch-vcf-to-maf \
-  --workspace-root /data/output/KOSMOS_VCF_FULL_RUN \
+  --workspace-root /data/output/NGS_VCF_FULL_RUN \
   --reference-config /config/reference-config.json \
   --reference-root /references --jobs 1
 
-find "$OUTPUT_DIR/KOSMOS_VCF_FULL_RUN" -maxdepth 3 -type f -print
+find "$OUTPUT_DIR/NGS_VCF_FULL_RUN" -maxdepth 3 -type f -print
 ```
 
 The MAF is written to `VCF_ALL_MAF/test_b37.maf`; the legacy-compatible TSV and

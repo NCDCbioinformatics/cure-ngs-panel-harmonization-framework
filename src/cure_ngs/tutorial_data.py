@@ -177,7 +177,7 @@ def export_v133_example_workspace(
             "sha256": _sha256(maf_target),
         },
         "full_run_command": (
-            "cure-ngs batch-vcf-to-maf --workspace-root /data/KOSMOS_VCF "
+            "cure-ngs batch-vcf-to-maf --workspace-root /data/NGS_VCF "
             "--reference-config /references/reference-config.json"
         ),
     }

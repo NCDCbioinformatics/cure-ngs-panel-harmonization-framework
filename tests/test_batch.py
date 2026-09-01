@@ -196,7 +196,7 @@ def test_batch_empty_vcf_creates_auditable_empty_maf(tmp_path: Path) -> None:
 
 
 def test_v133_workspace_layout_matches_manuscript_and_legacy_log(tmp_path: Path) -> None:
-    workspace = prepare_v133_workspace(tmp_path / "KOSMOS_VCF")
+    workspace = prepare_v133_workspace(tmp_path / "NGS_VCF")
     (workspace.input_directory / "negative.vcf").write_text(
         "##fileformat=VCFv4.2\n"
         "##reference=GRCh37\n"
@@ -307,7 +307,7 @@ def test_batch_retries_fasta_candidates(tmp_path: Path) -> None:
 def test_v133_nonempty_run_places_compatibility_artifacts_in_tmp(
     tmp_path: Path,
 ) -> None:
-    workspace = prepare_v133_workspace(tmp_path / "KOSMOS_VCF")
+    workspace = prepare_v133_workspace(tmp_path / "NGS_VCF")
     (workspace.input_directory / "sample.vcf").write_text(VCF, encoding="utf-8")
 
     def fake_normalize(
@@ -386,11 +386,11 @@ def test_cli_parser_exposes_batch_bundle_options() -> None:
         [
             "batch-vcf-to-maf",
             "--workspace-root",
-            "/data/KOSMOS_VCF",
+            "/data/NGS_VCF",
             "--reference-config",
             "/references/reference-config.json",
         ]
     )
     assert workspace_args.input_directory is None
     assert workspace_args.output_directory is None
-    assert workspace_args.workspace_root == "/data/KOSMOS_VCF"
+    assert workspace_args.workspace_root == "/data/NGS_VCF"
