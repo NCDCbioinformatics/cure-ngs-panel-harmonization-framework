@@ -18,7 +18,7 @@ docker run --rm --user "$(id -u):$(id -g)" \
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/tutorial-data:/data/output" \
   ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core \
-  export-v1.3.3-example /data/output/KOSMOS_VCF
+  export-v1.3.3-example /data/output/NGS_VCF
 ```
 
 `manifest.json` records the byte size, SHA-256 digest, source repository, and

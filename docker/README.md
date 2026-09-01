@@ -49,7 +49,7 @@ Create the exact manuscript/V1.3.3 four-directory example at the same time:
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/tutorial-data:/data/output" \
-  "$CORE_IMAGE" export-v1.3.3-example /data/output/KOSMOS_VCF
+  "$CORE_IMAGE" export-v1.3.3-example /data/output/NGS_VCF
 ```
 
 The exported MAF is explicitly marked as a validated bundled reference output,
@@ -97,14 +97,14 @@ docker run --rm \
 Run a heterogeneous directory with ordered FASTA and liftover-chain fallback:
 
 ```bash
-mkdir -p "$PWD/KOSMOS_VCF/VCF_ALL"
-# Copy input VCF/gVCF files into KOSMOS_VCF/VCF_ALL.
+mkdir -p "$PWD/NGS_VCF/VCF_ALL"
+# Copy input VCF/gVCF files into NGS_VCF/VCF_ALL.
 docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --user "$(id -u):$(id -g)" \
-  --volume "$PWD/KOSMOS_VCF:/data/KOSMOS_VCF" \
+  --volume "$PWD/NGS_VCF:/data/NGS_VCF" \
   --volume "$PWD/references:/references:ro" \
   cure-ngs-harmonizer:0.2.3 batch-vcf-to-maf \
-  --workspace-root /data/KOSMOS_VCF \
+  --workspace-root /data/NGS_VCF \
   --reference-config /references/reference-config.json --jobs 4
 ```
 

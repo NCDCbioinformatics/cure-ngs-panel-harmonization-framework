@@ -182,16 +182,16 @@ docker run --rm \
   --reference-root /references \
   | tee reference-bundle.preflight.json
 
-mkdir -p "$PWD/KOSMOS_VCF/VCF_ALL"
-# Put one or more .vcf/.vcf.gz/.g.vcf files in KOSMOS_VCF/VCF_ALL.
+mkdir -p "$PWD/NGS_VCF/VCF_ALL"
+# Put one or more .vcf/.vcf.gz/.g.vcf files in NGS_VCF/VCF_ALL.
 
 docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --user "$(id -u):$(id -g)" \
-  --volume "$PWD/KOSMOS_VCF:/data/KOSMOS_VCF" \
+  --volume "$PWD/NGS_VCF:/data/NGS_VCF" \
   --volume "$REFERENCE_DIR:/references:ro" \
   --volume "$PWD/config:/config:ro" \
   "$FULL_IMAGE" batch-vcf-to-maf \
-  --workspace-root /data/KOSMOS_VCF \
+  --workspace-root /data/NGS_VCF \
   --reference-config /config/reference-config.json \
   --reference-root /references --jobs 4
 ```
@@ -200,7 +200,7 @@ The command creates and uses the same layout shown in the manuscript and in
 `NCDC_batch_vcf2maf_V.1.3.3_github`:
 
 ```text
-KOSMOS_VCF/
+NGS_VCF/
 |-- VCF_ALL/       # original user VCFs
 |-- VCF_ALL_LOG/   # vcf2maf_batch_log.tsv, summary, manifests
 |-- VCF_ALL_MAF/   # one <sanitized-input-name>.maf per VCF
@@ -215,8 +215,8 @@ reference MAF to a local bind mount:
 mkdir -p "$PWD/tutorial-layout"
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/tutorial-layout:/data/output" \
-  "$CORE_IMAGE" export-v1.3.3-example /data/output/KOSMOS_VCF
-find "$PWD/tutorial-layout/KOSMOS_VCF" -maxdepth 3 -type f -print
+  "$CORE_IMAGE" export-v1.3.3-example /data/output/NGS_VCF
+find "$PWD/tutorial-layout/NGS_VCF" -maxdepth 3 -type f -print
 ```
 
 The exported log uses `REFERENCE_OUTPUT`, so it cannot be mistaken for a new
@@ -437,6 +437,7 @@ versioned behavioral and development provenance.
 
 - Manuscript-ready declarations: [docs/MANUSCRIPT_DECLARATIONS.md](docs/MANUSCRIPT_DECLARATIONS.md)
 - Software inventory summary: [docs/SOFTWARE_INVENTORY.md](docs/SOFTWARE_INVENTORY.md)
+- Account-wide version synchronization audit: [docs/ACCOUNT_VERSION_AUDIT.md](docs/ACCOUNT_VERSION_AUDIT.md)
 - Citation metadata: [CITATION.cff](CITATION.cff)
 - Data availability note: [data/README.md](data/README.md)
 - Public and synthetic reviewer data: [examples/README.md](examples/README.md)

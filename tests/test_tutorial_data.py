@@ -60,7 +60,7 @@ def test_export_tutorial_data_cli(tmp_path: Path) -> None:
 def test_export_v133_example_has_public_input_output_and_paper_tree(
     tmp_path: Path,
 ) -> None:
-    output = tmp_path / "KOSMOS_VCF"
+    output = tmp_path / "NGS_VCF"
 
     result = export_v133_example_workspace(output, source=SOURCE)
 
@@ -92,7 +92,7 @@ def test_export_v133_example_has_public_input_output_and_paper_tree(
 
 
 def test_export_v133_example_cli(tmp_path: Path) -> None:
-    output = tmp_path / "KOSMOS_VCF"
+    output = tmp_path / "NGS_VCF"
 
     status = main(
         ["export-v1.3.3-example", str(output), "--source", str(SOURCE)]

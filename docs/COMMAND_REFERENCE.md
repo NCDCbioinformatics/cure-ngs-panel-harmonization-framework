@@ -55,7 +55,7 @@ cure-ngs doctor-bundle \
   --reference-config reference-config.json \
   --reference-root /references
 
-cure-ngs batch-vcf-to-maf --workspace-root /data/KOSMOS_VCF \
+cure-ngs batch-vcf-to-maf --workspace-root /data/NGS_VCF \
   --reference-config reference-config.json \
   --reference-root /references \
   --jobs 4 --sample-tag-length 8
