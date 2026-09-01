@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.11"
 
@@ -71,7 +71,7 @@ jobs:
             echo "Outdated unified Docker image tag found" >&2
             exit 1
           fi
-          if git grep -n 'KOSMOS_VCF'; then
+          if git grep -n 'KOSMOS_VCF' -- ':!.github/workflows/repo-health.yml'; then
             echo "Obsolete KOSMOS_VCF tutorial path found; use NGS_VCF" >&2
             exit 1
           fi
