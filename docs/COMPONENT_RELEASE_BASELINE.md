@@ -2,8 +2,9 @@
 
 The consolidated CURE-NGS package is anchored to the latest published,
 non-draft, non-prerelease GitHub Release from each of the six historical
-component repositories as observed on 15 August 2026. It does not silently use
-an arbitrary later commit from a repository's default branch.
+component repositories as observed on 15 August 2026 and reconfirmed on
+4 September 2026. It does not silently use an arbitrary later commit from a
+repository's default branch.
 
 | Repository | Latest audited release | Release commit |
 | --- | --- | --- |
