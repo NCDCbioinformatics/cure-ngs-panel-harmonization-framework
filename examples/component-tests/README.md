@@ -10,14 +10,14 @@ repositories:
 mkdir -p tutorial-data
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/tutorial-data:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core \
   export-tutorial-data /data/output/component-test-data
 
 # Or place the VCF and validated reference MAF directly into the exact
 # manuscript/NCDC V1.3.3 folder layout:
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/tutorial-data:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core \
   export-v1.3.3-example /data/output/NGS_VCF
 ```
 

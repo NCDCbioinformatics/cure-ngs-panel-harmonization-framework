@@ -4,11 +4,14 @@ from pathlib import Path
 
 import pytest
 
+from cure_ngs.cli import main
 from cure_ngs.models import Assembly
 from cure_ngs.reference_bundle import (
     inspect_reference_bundle,
     load_reference_bundle,
+    single_reference_config_template,
     write_reference_config_template,
+    write_single_reference_config_template,
 )
 
 
@@ -33,6 +36,151 @@ def test_user_can_create_config_for_selected_reference_root(tmp_path: Path) -> N
         write_reference_config_template(
             output, reference_root="/different/root", cache_version=116
         )
+
+
+def test_user_can_create_minimal_single_reference_config(tmp_path: Path) -> None:
+    output = tmp_path / "config" / "reference-config.json"
+
+    created = write_single_reference_config_template(
+        output,
+        reference_root="/references",
+        fasta_path=(
+            "vep/homo_sapiens/116_GRCh37/"
+            "Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz"
+        ),
+        cache_version=116,
+        assembly=Assembly.GRCH37,
+        fasta_label="Ensembl_GRCh37_toplevel",
+        fasta_contig_style="numeric",
+        vep_data="vep",
+    )
+    payload = json.loads(created.read_text(encoding="utf-8"))
+
+    candidates = payload["assemblies"]["GRCh37"]["fasta_candidates"]
+    assert candidates == [
+        {
+            "label": "Ensembl_GRCh37_toplevel",
+            "path": (
+                "vep/homo_sapiens/116_GRCh37/"
+                "Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz"
+            ),
+            "contig_style": "numeric",
+        }
+    ]
+    assert "liftover" not in payload
+    assert payload["vep"] == {"data": "vep", "cache_version": 116}
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("fasta_path", "", "fasta_path"),
+        ("fasta_label", "", "fasta_label"),
+        ("vep_data", "", "vep_data"),
+        ("fasta_contig_style", "invalid", "fasta_contig_style"),
+        ("output_contig_style", "auto", "output_contig_style"),
+    ],
+)
+def test_single_reference_template_rejects_invalid_values(
+    field: str, value: str, message: str
+) -> None:
+    kwargs = {
+        "reference_root": "/references",
+        "fasta_path": "grch37.fa.gz",
+        "fasta_label": "primary",
+        "vep_data": "vep",
+        "fasta_contig_style": "numeric",
+        "output_contig_style": "numeric",
+    }
+    kwargs[field] = value
+
+    with pytest.raises(ValueError, match=message):
+        single_reference_config_template(**kwargs)
+
+
+def test_cli_creates_single_reference_config(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output = tmp_path / "reference-config.json"
+
+    exit_code = main(
+        [
+            "init-reference-config",
+            str(output),
+            "--reference-root",
+            "/references",
+            "--fasta",
+            "vep/homo_sapiens/116_GRCh37/reference.fa.gz",
+            "--fasta-label",
+            "vep116",
+            "--fasta-contig-style",
+            "numeric",
+            "--vep-data",
+            "vep",
+        ]
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["mode"] == "single-reference"
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert len(payload["assemblies"]["GRCh37"]["fasta_candidates"]) == 1
+    assert "liftover" not in payload
+
+
+def test_generated_single_reference_bundle_can_be_ready(tmp_path: Path) -> None:
+    reference = tmp_path / "vep" / "homo_sapiens" / "116_GRCh37" / "ref.fa"
+    reference.parent.mkdir(parents=True)
+    reference.write_text(">1\nA\n", encoding="utf-8")
+    Path(f"{reference}.fai").write_text(
+        "1\t249250621\t3\t1\t2\n", encoding="utf-8"
+    )
+    (reference.parent / "info.txt").write_text(
+        "species\thomo_sapiens\nassembly\tGRCh37\n", encoding="utf-8"
+    )
+    cache_payload = reference.parent / "1" / "1-1000000.gz"
+    cache_payload.parent.mkdir()
+    cache_payload.write_bytes(b"structural test fixture")
+    config = write_single_reference_config_template(
+        tmp_path / "reference-config.json",
+        reference_root=str(tmp_path),
+        fasta_path="vep/homo_sapiens/116_GRCh37/ref.fa",
+        fasta_contig_style="numeric",
+        vep_data="vep",
+    )
+
+    report = inspect_reference_bundle(
+        load_reference_bundle(config),
+        runtime_vep={
+            "status": "available",
+            "version": "ensembl-vep          : 116.1",
+        },
+    )
+
+    assert report["status"] == "READY"
+    assert report["failed_checks"] == 0
+    assert not any(
+        str(check["name"]).startswith(("chain:", "dict:"))
+        for check in report["checks"]
+    )
+
+
+def test_cli_requires_explicit_fasta_for_grch38(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    exit_code = main(
+        [
+            "init-reference-config",
+            str(tmp_path / "reference-config.json"),
+            "--reference-root",
+            "/references",
+            "--assembly",
+            "GRCh38",
+        ]
+    )
+
+    assert exit_code == 2
+    assert "GRCh38 requires --fasta" in capsys.readouterr().err
 
 
 def test_bundle_paths_are_portable_and_root_relative(tmp_path: Path) -> None:

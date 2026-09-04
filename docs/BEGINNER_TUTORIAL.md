@@ -63,7 +63,7 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/run_beginner_tutorial.ps1
 ```
 
-The launcher downloads the public `0.2.3-core` image, runs all six component
+The launcher downloads the public `0.2.4-core` image, runs all six component
 groups without container network access, checks every expected result, and
 writes outputs to a new timestamped directory under `tutorial-output/`.
 Success ends with:
@@ -93,7 +93,7 @@ The rest of this page expands the same workflow command by command.
 The following section uses a Bash shell. Start in the cloned repository:
 
 ```bash
-IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core
+IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core
 REPO="$PWD"
 OUTPUT_DIR="$REPO/tutorial-output/manual"
 
@@ -121,7 +121,7 @@ echo "Local output directory: $OUTPUT_DIR"
 cure_ngs --version
 ```
 
-The expected version is `0.2.3`. The bind mount means:
+The expected version is `0.2.4`. The bind mount means:
 
 | Docker path | Local host path | Purpose |
 | --- | --- | --- |
@@ -406,75 +406,86 @@ tutorial-output/manual/
 
 ## 13. Optional: complete real VEP/vcf2maf annotation
 
-This step is not self-contained because the official human FASTA and VEP cache
-are too large and licensing/version requirements make them inappropriate for a
-small Git repository. Follow [Reference and annotation data](REFERENCE_DATA.md)
-to prepare a GRCh37 FASTA, `.fai`, Picard `.dict`, VEP 116 GRCh37 cache, and
-the optional GRCh38-to-GRCh37 chains.
+This step is intentionally separate from the network-free tutorial because the
+official human FASTA and VEP cache are too large for the repository or image.
+The VEP 116 GRCh37 cache download alone is approximately 25 GB compressed and
+requires additional space after extraction. A Picard dictionary and chain are
+needed only for liftover, not for a native GRCh37-to-GRCh37 run.
 
-Select the external directory and require a successful content-aware preflight:
+### 13.1 Install the cache and its matching FASTA once
 
-```bash
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3
-REFERENCE_DIR=/path/to/your/reference-store
-CONFIG_DIR="$REPO/config"
-
-docker pull "$FULL_IMAGE"
-docker run --rm \
-  --volume "$REFERENCE_DIR:/references:ro" \
-  --volume "$CONFIG_DIR:/config:ro" \
-  "$FULL_IMAGE" doctor-bundle \
-  --reference-config /config/reference-config.json \
-  --reference-root /references \
-  | tee "$OUTPUT_DIR/reference-bundle.preflight.json"
-```
-
-Continue only if the report says `READY`. Replace the example FASTA path below
-with the matching path from the verified config, then finish annotation of the
-minimal-MAF-derived VCF:
+Choose the host directory yourself. This is the only location CURE-NGS will
+inspect; the program never searches the workstation automatically.
 
 ```bash
-docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
-  --user "$(id -u):$(id -g)" \
-  --volume "$REFERENCE_DIR:/references:ro" \
-  --volume "$OUTPUT_DIR:/data/output" \
-  "$FULL_IMAGE" annotate-vcf \
-  /data/output/from-minimal/synthetic_sample_001.from_minimal_maf.vcf \
-  /data/output/from-minimal.annotated.maf \
-  --reference-fasta /references/grch37/hg19.fa \
-  --assembly GRCh37 \
-  --cache-version 116 \
-  --vep-data /references/vep \
-  --vcf-tumor-id synthetic_sample_001 \
-  --tumor-id synthetic_sample_001
+REFERENCE_DIR="$HOME/cure-ngs-reference-store"
+mkdir -p "$REFERENCE_DIR/vep"
+
+docker pull ensemblorg/ensembl-vep:release_116.1
+docker run --rm -it \
+  --volume "$REFERENCE_DIR/vep:/data" \
+  ensemblorg/ensembl-vep:release_116.1 \
+  INSTALL.pl -a cf -s homo_sapiens -y GRCh37 -c /data
 ```
 
-The same verified resources can annotate the 25-record public VCF end to end
-while producing the exact manuscript/V1.3.3 directory structure:
+The final `-c /data` is essential. Without it, `INSTALL.pl` uses the container's
+default cache directory and the downloaded files disappear when that temporary
+container exits. A successful installation contains at least:
+
+```text
+vep/homo_sapiens/116_GRCh37/info.txt
+vep/homo_sapiens/116_GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz
+vep/homo_sapiens/116_GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz.fai
+```
+
+Do not annotate the three-row toy VCF from Section 10 against this real FASTA.
+That VCF was deliberately built from `examples/synthetic/tiny.grch37.fa` for a
+small offline conversion test. Coordinate labels alone do not make two FASTAs
+interchangeable; VCF REF alleles must match the exact FASTA.
+
+### 13.2 Run the checked full-annotation tutorial
+
+Run the supplied launcher from the cloned repository:
 
 ```bash
-mkdir -p "$OUTPUT_DIR/NGS_VCF_FULL_RUN/VCF_ALL"
-cp "$OUTPUT_DIR/component-test-data/inputs/test_b37.vcf" \
-  "$OUTPUT_DIR/NGS_VCF_FULL_RUN/VCF_ALL/"
-
-docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
-  --user "$(id -u):$(id -g)" \
-  --volume "$REFERENCE_DIR:/references:ro" \
-  --volume "$CONFIG_DIR:/config:ro" \
-  --volume "$OUTPUT_DIR:/data/output" \
-  "$FULL_IMAGE" batch-vcf-to-maf \
-  --workspace-root /data/output/NGS_VCF_FULL_RUN \
-  --reference-config /config/reference-config.json \
-  --reference-root /references --jobs 1
-
-find "$OUTPUT_DIR/NGS_VCF_FULL_RUN" -maxdepth 3 -type f -print
+bash scripts/run_full_annotation_tutorial.sh "$REFERENCE_DIR"
 ```
 
-The MAF is written to `VCF_ALL_MAF/test_b37.maf`; the legacy-compatible TSV and
-JSON summary are written to `VCF_ALL_LOG`; vcf2maf/VEP temporary VCF and
-stdout/stderr files are written to `VCF_ALL_TMP`. Retain the MAF, manifests,
-preflight JSON, and logs together. If VEP 116 is
-paired with a VEP 102 cache, `doctor-bundle` intentionally reports
+The launcher performs all of these operations visibly and stops on the first
+failure:
+
+1. checks Docker/Podman and the exact selected files;
+2. exports the public 25-variant GRCh37 VCF if it is not already present;
+3. creates a single-reference config containing only the selected Ensembl
+   FASTA, with no unused liftover candidates;
+4. requires `doctor-bundle` to report `READY`;
+5. runs normalization plus the real pinned VEP 116/vcf2maf annotation; and
+6. requires 25 non-empty MAF rows from the 25 input variants.
+
+Results are written to the same manuscript/V1.3.3 layout:
+
+```text
+tutorial-output/NGS_VCF_FULL_RUN/
+|-- VCF_ALL/test_b37.vcf
+|-- VCF_ALL_LOG/
+|-- VCF_ALL_MAF/test_b37.maf
+`-- VCF_ALL_TMP/
+```
+
+The generated config and preflight report are retained at
+`tutorial-output/full-annotation-config/` and
+`tutorial-output/reference-bundle.preflight.json`. If the installer produced a
+different FASTA filename, supply its path relative to `REFERENCE_DIR`:
+
+```bash
+export CURE_NGS_FASTA_RELATIVE='vep/homo_sapiens/116_GRCh37/your-file.fa.gz'
+bash scripts/run_full_annotation_tutorial.sh "$REFERENCE_DIR"
+```
+
+Institutions that intentionally maintain the original three-FASTA and
+two-chain fallback should use the
+[V1.3.3 batch workflow guide](V1.3.3_BATCH_WORKFLOW.md). If VEP 116 is paired
+with a cache from another release, `doctor-bundle` intentionally reports
 `NOT_READY`; do not bypass that compatibility failure.
 
 ## Common first-run problems

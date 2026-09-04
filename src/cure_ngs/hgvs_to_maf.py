@@ -336,7 +336,7 @@ def _http_get(url: str, *, timeout_seconds: float) -> tuple[int, bytes, dict[str
         headers={
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "cure-ngs-harmonizer/0.2.3",
+            "User-Agent": "cure-ngs-harmonizer/0.2.4",
         },
     )
     try:
