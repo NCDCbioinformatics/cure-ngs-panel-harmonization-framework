@@ -12,7 +12,7 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3 COMMAND OPTIONS
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4 COMMAND OPTIONS
 ```
 
 All paths passed to `COMMAND` are container paths, not host paths. Replace the
@@ -28,12 +28,12 @@ their SHA-256 manifest:
 mkdir -p output
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/output:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core \
   verify-tutorial-data
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/output:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core \
   export-tutorial-data /data/output/component-test-data
 ```
 
@@ -49,7 +49,10 @@ fallbacks while GRCh37 remains the default target:
 
 ```bash
 cure-ngs init-reference-config reference-config.json \
-  --reference-root /references --cache-version 116
+  --reference-root /references --cache-version 116 \
+  --fasta vep/homo_sapiens/116_GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz \
+  --fasta-label Ensembl_GRCh37_primary \
+  --fasta-contig-style numeric --vep-data vep
 
 cure-ngs doctor-bundle \
   --reference-config reference-config.json \
@@ -61,12 +64,13 @@ cure-ngs batch-vcf-to-maf --workspace-root /data/NGS_VCF \
   --jobs 4 --sample-tag-length 8
 ```
 
-`init-reference-config` records the reference root selected by the user and
-creates the standard three-FASTA/two-chain candidate layout without
-overwriting an existing config. Edit the relative candidate paths when an
-institution uses a different layout. In Docker, select the host directory with
-the left side of `--volume HOST_DIRECTORY:/references:ro`; `/references` is the
-corresponding in-container root.
+With `--fasta`, `init-reference-config` creates a minimal config containing only
+that explicit FASTA and no liftover profile. This is the recommended first-run
+mode. Omit `--fasta` to create the original three-FASTA/two-chain GRCh37
+fallback layout. The command never overwrites an existing config unless
+`--force` is given. In Docker, select the host directory with the left side of
+`--volume HOST_DIRECTORY:/references:ro`; `/references` is the corresponding
+in-container root.
 
 `--workspace-root` creates/uses `VCF_ALL`, `VCF_ALL_LOG`, `VCF_ALL_MAF`, and
 `VCF_ALL_TMP`. It writes MAFs only to `VCF_ALL_MAF`, the exact nine-column

@@ -23,6 +23,7 @@ from .reference_bundle import (
     inspect_reference_bundle,
     load_reference_bundle,
     write_reference_config_template,
+    write_single_reference_config_template,
 )
 from .resources import verify_profile_resources
 from .runtime import runtime_versions
@@ -107,7 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     bundle_init = subparsers.add_parser(
         "init-reference-config",
-        help="Create a multi-reference config for a user-selected reference root",
+        help="Create a portable reference config for a user-selected root",
     )
     bundle_init.add_argument("output")
     bundle_init.add_argument(
@@ -119,6 +120,31 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     bundle_init.add_argument("--cache-version", type=int, default=116)
+    bundle_init.add_argument(
+        "--fasta",
+        help=(
+            "Create a minimal single-reference config using this path relative "
+            "to --reference-root; omit it for the legacy three-FASTA/two-chain "
+            "GRCh37 fallback template"
+        ),
+    )
+    bundle_init.add_argument("--assembly", type=_assembly, default=Assembly.GRCH37)
+    bundle_init.add_argument("--fasta-label", default="primary_reference")
+    bundle_init.add_argument(
+        "--fasta-contig-style",
+        choices=("auto", "ucsc", "numeric"),
+        default="auto",
+    )
+    bundle_init.add_argument(
+        "--vep-data",
+        default="vep",
+        help="VEP cache root relative to --reference-root (default: vep)",
+    )
+    bundle_init.add_argument(
+        "--output-contig-style",
+        choices=("ucsc", "numeric"),
+        default="numeric",
+    )
     bundle_init.add_argument("--force", action="store_true")
 
     tutorial_data = subparsers.add_parser(
@@ -443,20 +469,45 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if report["status"] == "READY" else 2
 
         if args.command == "init-reference-config":
-            output = write_reference_config_template(
-                args.output,
-                reference_root=args.reference_root,
-                cache_version=args.cache_version,
-                force=args.force,
-            )
+            if args.fasta:
+                output = write_single_reference_config_template(
+                    args.output,
+                    reference_root=args.reference_root,
+                    fasta_path=args.fasta,
+                    cache_version=args.cache_version,
+                    assembly=args.assembly,
+                    fasta_label=args.fasta_label,
+                    fasta_contig_style=args.fasta_contig_style,
+                    vep_data=args.vep_data,
+                    output_contig_style=args.output_contig_style,
+                    force=args.force,
+                )
+                mode = "single-reference"
+            else:
+                if args.assembly != Assembly.GRCH37:
+                    raise ValueError("--assembly GRCh38 requires --fasta")
+                output = write_reference_config_template(
+                    args.output,
+                    reference_root=args.reference_root,
+                    cache_version=args.cache_version,
+                    force=args.force,
+                )
+                mode = "multi-reference-fallback"
             print(
                 json.dumps(
                     {
                         "status": "CREATED",
+                        "mode": mode,
                         "config": str(output),
                         "reference_root": args.reference_root,
                         "next_steps": [
-                            "Edit candidate paths or arrange files under the root",
+                            (
+                                "Run doctor-bundle; edit only explicitly selected "
+                                "paths if the report is not READY"
+                                if args.fasta
+                                else "Remove uninstalled candidates or arrange all "
+                                "configured fallback resources under the root"
+                            ),
                             (
                                 "cure-ngs doctor-bundle --reference-config "
                                 f"{output} --reference-root {args.reference_root}"

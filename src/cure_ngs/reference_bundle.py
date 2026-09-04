@@ -77,6 +77,60 @@ def reference_config_template(
     }
 
 
+def single_reference_config_template(
+    *,
+    reference_root: str,
+    fasta_path: str,
+    cache_version: int = 116,
+    assembly: Assembly = Assembly.GRCH37,
+    fasta_label: str = "primary_reference",
+    fasta_contig_style: str = "auto",
+    vep_data: str = "vep",
+    output_contig_style: str = "numeric",
+) -> dict[str, object]:
+    """Return a minimal bundle for one explicitly selected FASTA.
+
+    This form is intended for first-time and single-assembly installations.
+    It deliberately omits liftover profiles so ``doctor-bundle`` validates
+    only resources the user selected and installed.
+    """
+
+    if not reference_root.strip():
+        raise ValueError("reference_root must be a non-empty path")
+    if not fasta_path.strip():
+        raise ValueError("fasta_path must be a non-empty path")
+    if not fasta_label.strip():
+        raise ValueError("fasta_label must be a non-empty label")
+    if not vep_data.strip():
+        raise ValueError("vep_data must be a non-empty path")
+    if cache_version < 1:
+        raise ValueError("cache_version must be a positive integer")
+    if fasta_contig_style not in {"auto", "ucsc", "numeric"}:
+        raise ValueError("fasta_contig_style must be auto, ucsc, or numeric")
+    if output_contig_style not in {"ucsc", "numeric"}:
+        raise ValueError("output_contig_style must be ucsc or numeric")
+    return {
+        "schema_version": "1.0",
+        "reference_root": reference_root,
+        "target_assembly": assembly.value,
+        "unknown_assembly": assembly.value,
+        "output_contig_style": output_contig_style,
+        "assemblies": {
+            assembly.value: {
+                "fasta_candidates": [
+                    {
+                        "label": fasta_label,
+                        "path": fasta_path,
+                        "contig_style": fasta_contig_style,
+                    }
+                ]
+            }
+        },
+        "vep": {"data": vep_data, "cache_version": cache_version},
+        "policies": {"allow_all_rejected_empty": False},
+    }
+
+
 def write_reference_config_template(
     output_path: str | Path,
     *,
@@ -94,6 +148,44 @@ def write_reference_config_template(
     output.parent.mkdir(parents=True, exist_ok=True)
     payload = reference_config_template(
         reference_root=reference_root, cache_version=cache_version
+    )
+    output.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return output
+
+
+def write_single_reference_config_template(
+    output_path: str | Path,
+    *,
+    reference_root: str,
+    fasta_path: str,
+    cache_version: int = 116,
+    assembly: Assembly = Assembly.GRCH37,
+    fasta_label: str = "primary_reference",
+    fasta_contig_style: str = "auto",
+    vep_data: str = "vep",
+    output_contig_style: str = "numeric",
+    force: bool = False,
+) -> Path:
+    """Create a single-reference config without overwriting by default."""
+
+    output = Path(output_path).expanduser().resolve()
+    if output.exists() and not force:
+        raise FileExistsError(
+            f"Reference config already exists: {output}; pass --force to replace it"
+        )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    payload = single_reference_config_template(
+        reference_root=reference_root,
+        fasta_path=fasta_path,
+        cache_version=cache_version,
+        assembly=assembly,
+        fasta_label=fasta_label,
+        fasta_contig_style=fasta_contig_style,
+        vep_data=vep_data,
+        output_contig_style=output_contig_style,
     )
     output.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n",

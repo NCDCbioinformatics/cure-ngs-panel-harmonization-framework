@@ -13,7 +13,7 @@ elif command -v docker >/dev/null 2>&1; then
 else
   ENGINE="podman"
 fi
-IMAGE="${CURE_NGS_IMAGE:-ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core}"
+IMAGE="${CURE_NGS_IMAGE:-ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core}"
 
 command -v "$ENGINE" >/dev/null 2>&1 || {
   echo "ERROR: Docker or Podman is required." >&2

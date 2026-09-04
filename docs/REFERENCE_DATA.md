@@ -45,6 +45,9 @@ references/
 |-- vep/
 |   `-- homo_sapiens/
 |       |-- 116_GRCh37/
+|       |   |-- info.txt
+|       |   |-- Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz
+|       |   `-- Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz.fai
 |       `-- 116_GRCh38/
 |-- liftover/
 |   |-- hg38ToHg19.over.chain.gz
@@ -85,12 +88,12 @@ Create the required indexes with tools already in the full image:
 ```bash
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/references:/references" \
-  --entrypoint samtools ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3 \
+  --entrypoint samtools ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4 \
   faidx /references/grch37/hg19.fa
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/references:/references" \
-  --entrypoint java ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3 \
+  --entrypoint java ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4 \
   -jar /opt/picard/picard.jar CreateSequenceDictionary \
   R=/references/grch37/hg19.fa O=/references/grch37/hg19.dict
 ```
@@ -113,14 +116,19 @@ mkdir -p references/vep
 docker run --rm -it \
   --volume "$PWD/references/vep:/data" \
   ensemblorg/ensembl-vep:release_116.1 \
-  INSTALL.pl -a cf -s homo_sapiens -y GRCh37
+  INSTALL.pl -a cf -s homo_sapiens -y GRCh37 -c /data
 ```
 
-For GRCh38, replace `GRCh37` with `GRCh38`. Before analysis, confirm that the
+The explicit `-c /data` directs both the cache and FASTA into the bind-mounted
+host directory. Omitting it can place the download in the temporary
+container's default cache directory, which is deleted with the container. For
+GRCh38, replace `GRCh37` with `GRCh38`. Before analysis, confirm that the
 mounted tree contains `homo_sapiens/116_GRCh37` or
-`homo_sapiens/116_GRCh38`. A cache from VEP 102 is retained only as historical
-benchmark provenance and must not be presented as a VEP 116 reproducibility
-run.
+`homo_sapiens/116_GRCh38`, its `info.txt`, chromosome payload, and matching
+FASTA indexes. The GRCh37 cache is approximately 25 GB compressed and needs
+additional extraction space. A cache from VEP 102 is retained only as
+historical benchmark provenance and must not be presented as a VEP 116
+reproducibility run.
 
 ## 3. Install liftover chains only when builds differ
 
@@ -167,12 +175,10 @@ exact long-term replay is required.
 
 ## 5. Run preflight checks
 
-Check the entire configured bundle, including all FASTA indexes, Picard
-dictionaries, chain candidates, chain-to-reference labels, and the matching VEP
-cache. In addition to file existence, the check verifies primary chromosome
-lengths, observed contig styles, chain direction, chain/target-FASTA style
-compatibility, VEP species and assembly metadata, and chromosome 1 cache data.
-The installed VEP major release must also equal the configured cache version.
+Check the entire configured bundle. For a first native-GRCh37 run, generate a
+single-reference config so uninstalled alternative FASTAs and optional chains
+are not falsely presented as requirements. The installed VEP major release
+must equal the configured cache version.
 
 ```bash
 REFERENCE_DIR=/path/to/your/reference-store
@@ -180,14 +186,19 @@ mkdir -p config
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/config:/config" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3 init-reference-config \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4 init-reference-config \
   /config/reference-config.json \
-  --reference-root /references --cache-version 116
+  --reference-root /references --cache-version 116 \
+  --assembly GRCh37 \
+  --fasta vep/homo_sapiens/116_GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz \
+  --fasta-label Ensembl_GRCh37_primary \
+  --fasta-contig-style numeric \
+  --vep-data vep
 
 docker run --rm \
   --volume "$REFERENCE_DIR:/references:ro" \
   --volume "$PWD/config:/config:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3 doctor-bundle \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4 doctor-bundle \
   --reference-config /config/reference-config.json \
   --reference-root /references \
   | tee reference-bundle.preflight.json
@@ -203,7 +214,7 @@ GRCh37 VCF-to-MAF environment:
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3 doctor \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4 doctor \
   --profile vcf-to-maf \
   --assembly GRCh37 \
   --reference-fasta /references/grch37/hg19.fa \
@@ -216,7 +227,7 @@ Gene and fusion resources:
 ```bash
 docker run --rm \
   --volume "$PWD/references:/references:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3 doctor \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4 doctor \
   --profile gene \
   --gtf /references/genes/gencode.v19.annotation.gtf.gz \
   --hgnc /references/genes/hgnc_complete_set.txt
@@ -224,6 +235,11 @@ docker run --rm \
 
 The command exits non-zero and reports each missing or incompatible item when
 the environment is not ready.
+
+For the original multi-reference fallback, omit `--fasta`. That default emits
+the three GRCh37 FASTA and two GRCh38-to-GRCh37 chain candidates from
+`NCDC_batch_vcf2maf_V.1.3.3`. Remove any candidate not actually installed;
+`doctor-bundle` deliberately validates every candidate named in the config.
 
 ## Checksums and provenance
 
