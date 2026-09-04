@@ -1,7 +1,7 @@
 # Clean Ubuntu installation validation
 
 This record documents the current external-user validation of CURE-NGS
-`v0.2.3`. The check uses public release artifacts and a fresh GitHub-hosted
+`v0.2.5`. The check uses public release artifacts and a fresh GitHub-hosted
 Ubuntu runner; it does not rely on an author workstation, a pre-pulled
 CURE-NGS image, or GHCR credentials.
 
@@ -9,21 +9,21 @@ CURE-NGS image, or GHCR credentials.
 
 | Property | Value |
 | --- | --- |
-| Validation date | 2026-08-31 |
+| Validation date | 2026-09-04 |
 | Operating system | GitHub-hosted Ubuntu 22.04 LTS runner |
 | Architecture | x86-64 / `linux/amd64` |
-| Source | merge commit `7e1cd90eba207de24845486512f09a5d0444ea18` |
-| Release | [`v0.2.3`](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases/tag/v0.2.3) |
-| Public verification | [Public Image Verification run 33350796468](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/runs/33350796468) |
-| Verification job | `clean-public-install`, PASS in 44 seconds |
-| Complete workflow | PASS in 49 seconds |
+| Source | main commit `e07baded2d7eb5727dcd147f6d92e40fa27af20c` |
+| Release | [`v0.2.5`](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases/tag/v0.2.5) |
+| Public verification | [Public Image Verification run 33843399076](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/runs/33843399076) |
+| Verification job | `clean-public-install`, PASS in 49 seconds |
+| Complete workflow | PASS in 54 seconds |
 | Registry login | None; both pulls were anonymous |
 
 The workflow checked out `main`, ran `scripts/verify_public_install.sh`, and
 uploaded the generated `tutorial-output/` directory even when a test failed.
 The successful artifact was named `public-image-tutorial-output` with artifact
 digest
-`sha256:736f6a95d061007fab15fe5f05f469203aeff89180d064e91a3ad90f58d45e08`.
+`sha256:937a61faad787613e943670995b26a703c30134803d0c0c8f394c339c9115cd8`.
 
 ## Public image pull results
 
@@ -32,10 +32,10 @@ by Docker:
 
 | Image | Published OCI manifest digest | Result |
 | --- | --- | --- |
-| `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core` | `sha256:3d18365aa2d154b4033e936ff5535e7b83cda3595fdc56d2a419939df7512bd4` | PASS |
-| `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3` | `sha256:a6a92b4f631c3a63bbcd99c67d840d449406f6fa430ae1e809b3b4f106ef0437` | PASS |
+| `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core` | `sha256:90c735f26f1b5cf13393391f3a9ed314beae0c12f579658dbb7e12bb50cdc2da` | PASS |
+| `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5` | `sha256:0bd13de82e94f10fe1eb70e0979eed71ea6c22f178e00e7007459f081b91da9b` | PASS |
 
-The full image reported CURE-NGS 0.2.3, Python 3.10.12, bcftools 1.13,
+The full image reported CURE-NGS 0.2.5, Python 3.10.12, bcftools 1.13,
 SAMtools 1.13, Ensembl VEP 116.1, Picard 3.1.1, Java 17, Perl 5.34, and
 the pinned vcf2maf revision
 `754d68ab4ad3eba29199c5a62e0061745aed7e7e`.
@@ -46,7 +46,7 @@ the pinned vcf2maf revision
 | --- | --- |
 | Anonymous core image pull | PASS |
 | Anonymous full VEP/vcf2maf image pull | PASS |
-| Core image `--version` | PASS; reports 0.2.3 |
+| Core image `--version` | PASS; reports 0.2.5 |
 | Core `doctor --profile core` | PASS |
 | Full-image dependency inventory | PASS; all pinned versions matched |
 | Six-component beginner tutorial | PASS, all stages |
@@ -61,10 +61,10 @@ the pinned vcf2maf revision
 | Empty but valid VCF handling | PASS; auditable `VALID_EMPTY` result |
 | V1.3.3 manuscript workspace export | PASS; `VCF_ALL`, `VCF_ALL_LOG`, `VCF_ALL_MAF`, and `VCF_ALL_TMP` created |
 
-The associated `v0.2.3` tag tests and pull-request checks also passed before
-the release and container images were published. Component-release locks,
-Python 3.10/3.11/3.12 tests, container regression tests, repository-health
-checks, and link checks were all included in that release gate.
+The associated `v0.2.5` tag tests passed before the release and container
+images were published, and the current-main checks passed again afterward.
+Component-release locks, Python 3.10/3.11/3.12 tests, container regression
+tests, repository-health checks, and link checks were included in those gates.
 
 ## Repeat the public-install check
 
@@ -73,7 +73,7 @@ On a clean Ubuntu host, install and start Docker as described in
 run:
 
 ```bash
-git clone --branch v0.2.3 --depth 1 \
+git clone --branch v0.2.5 --depth 1 \
   https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework.git
 cd cure-ngs-panel-harmonization-framework
 bash scripts/verify_public_install.sh
@@ -83,7 +83,7 @@ This command:
 
 1. verifies that Docker or Podman is running and the current user can access
    its socket;
-2. pulls both fully qualified `v0.2.3` GHCR images without logging in;
+2. pulls both fully qualified `v0.2.5` GHCR images without logging in;
 3. records their immutable repository digests;
 4. runs the core preflight checks;
 5. validates the pinned full-image tools; and

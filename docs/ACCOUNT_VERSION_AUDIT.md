@@ -12,7 +12,7 @@ distribution.
 - Release: [`v0.2.5`](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases/tag/v0.2.5)
 - Full image: `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5`
 - Core image: `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core`
-- Public-install evidence: [successful v0.2.5 clean Ubuntu workflow](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/runs/33842778908)
+- Public-install evidence: [successful v0.2.5 clean Ubuntu workflow](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/runs/33843399076)
 
 ## Publication-facing repositories synchronized
 
