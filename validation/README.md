@@ -35,4 +35,6 @@ combined multiallelic source row.
 analysis sets. `Supplementary_Table_3_Concordance.xlsx` contains the same counts,
 formula-driven metrics, definitions, and release metadata in the journal
 supplement format. `Figure4_concordance.png` is generated from the TSV by
-`scripts/create_concordance_figure.py`.
+`scripts/create_concordance_figure.py`; the legacy filename is retained for
+provenance, while the revised manuscript presents it as Supplementary Figure 4
+supporting the downstream comparison in main Figure 4.
