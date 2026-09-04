@@ -342,10 +342,11 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The current suite collects 95 tests (93 passed and 2 bcftools-dependent tests
-skip only on hosts without bcftools) and exceeds the required 70% branch-aware
-coverage floor. The Linux container job separately runs the complete beginner
-six-component walkthrough under hardened container settings.
+The current suite collects 108 tests (106 passed and 2 bcftools-dependent tests
+skip only on hosts without bcftools) and reports 71.53% combined statement and
+branch coverage, exceeding the required 70% floor. The Linux container job
+separately runs the complete beginner six-component walkthrough under hardened
+container settings.
 
 Inspect a synthetic VCF and report all inferred properties:
 
@@ -419,7 +420,8 @@ HGVS-evaluable comparison yielded:
 | F1 | 98.43% |
 
 See [the technical-validation README](validation/README.md), the aggregate JSON,
-the per-fixture TSV, and the script that generates revised Figure 4. Synthetic
+the per-fixture TSV, and the script that generates Supplementary Figure 4, which
+supports the downstream harmonization comparison in main Figure 4. Synthetic
 cross-route fixtures included under `tests/fixtures/synthetic/` yield 100% exact
 set agreement and require no patient data.
 
@@ -427,7 +429,8 @@ set agreement and require no patient data.
 
 The repository-role table above identifies every audited component release and
 its supported unified command. The baseline was resolved from each
-repository's current `releases/latest` API response on 15 August 2026. Exact
+repository's current `releases/latest` API response on 15 August 2026 and was
+reconfirmed on 4 September 2026. Exact
 release IDs, tag-resolved commit SHAs, asset
 sizes, and SHA-256 digests are frozen in
 [`resources/components.lock.json`](resources/components.lock.json). CI verifies
