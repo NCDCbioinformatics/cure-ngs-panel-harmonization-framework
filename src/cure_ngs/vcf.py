@@ -8,6 +8,8 @@ from typing import Iterable, TextIO
 from .models import (
     Assembly,
     AssemblyDetectionError,
+    AssemblyEvidenceConflictError,
+    AssemblyUndeterminedError,
     InspectionStatus,
     VcfFormatError,
     VcfInspection,
@@ -83,10 +85,12 @@ def detect_assembly(
         details = "; ".join(
             f"{assembly.value}={len(evidence[assembly])}" for assembly in detected
         )
-        raise AssemblyDetectionError(f"Conflicting assembly evidence: {details}")
+        raise AssemblyEvidenceConflictError(
+            f"Conflicting assembly evidence: {details}"
+        )
     if not detected:
         if required:
-            raise AssemblyDetectionError(
+            raise AssemblyUndeterminedError(
                 "Genome assembly could not be determined; supply --assembly explicitly"
             )
         return None, ()
@@ -178,7 +182,7 @@ def inspect_vcf(
     )
     if assembly_override is not None:
         if detected is not None and detected != assembly_override:
-            raise AssemblyDetectionError(
+            raise AssemblyEvidenceConflictError(
                 f"--assembly {assembly_override.value} conflicts with detected "
                 f"{detected.value}"
             )

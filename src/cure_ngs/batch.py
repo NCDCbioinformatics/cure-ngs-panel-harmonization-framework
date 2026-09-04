@@ -22,7 +22,7 @@ from typing import BinaryIO, Iterable, TextIO
 from .annotation import AnnotationRun, annotate_vcf
 from .fasta import FastaReference
 from .liftover import LiftoverRun, liftover_vcf
-from .models import Assembly, AssemblyDetectionError, VcfInspection
+from .models import Assembly, AssemblyUndeterminedError, VcfInspection
 from .provenance import write_manifest
 from .reference_bundle import ReferenceBundle, ResourceCandidate
 from .tools import normalize_vcf
@@ -814,7 +814,7 @@ def _process_one(
         )
         try:
             inspection = inspect_vcf(repaired, assembly_override=source_assembly)
-        except AssemblyDetectionError:
+        except AssemblyUndeterminedError:
             fallback = source_assembly or bundle.unknown_assembly
             if fallback is None:
                 raise

@@ -12,7 +12,7 @@ docker run --rm --read-only --tmpfs /tmp:size=2g,mode=1777 \
   --volume "$PWD/input:/data/input:ro" \
   --volume "$PWD/output:/data/output" \
   --volume "$PWD/references:/references:ro" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4 COMMAND OPTIONS
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5 COMMAND OPTIONS
 ```
 
 All paths passed to `COMMAND` are container paths, not host paths. Replace the
@@ -28,12 +28,12 @@ their SHA-256 manifest:
 mkdir -p output
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/output:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core \
   verify-tutorial-data
 
 docker run --rm --user "$(id -u):$(id -g)" \
   --volume "$PWD/output:/data/output" \
-  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core \
+  ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core \
   export-tutorial-data /data/output/component-test-data
 ```
 

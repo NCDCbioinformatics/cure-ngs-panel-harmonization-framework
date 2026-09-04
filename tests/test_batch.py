@@ -304,6 +304,63 @@ def test_batch_retries_fasta_candidates(tmp_path: Path) -> None:
     ]
 
 
+def test_batch_never_uses_unknown_fallback_for_conflicting_evidence(
+    tmp_path: Path,
+) -> None:
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    conflicting = input_dir / "conflicting.vcf"
+    conflicting.write_text(
+        "##fileformat=VCFv4.2\n"
+        "##reference=GRCh37\n"
+        "##contig=<ID=chr1,length=248956422>\n"
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tTUMOR\n"
+        "chr1\t10\t.\tA\tC\t.\tPASS\t.\tGT\t0/1\n",
+        encoding="utf-8",
+    )
+
+    result = batch_vcf_to_maf(
+        input_dir,
+        tmp_path / "output",
+        bundle=_bundle(tmp_path),
+        jobs=1,
+    )
+
+    assert result.failed == 1
+    assert result.items[0].status == "FAILED"
+    assert "Conflicting assembly evidence" in result.items[0].message
+    assert not Path(result.items[0].output_maf).exists()
+
+
+def test_batch_uses_configured_fallback_only_when_assembly_is_undetermined(
+    tmp_path: Path,
+) -> None:
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    (input_dir / "negative.vcf").write_text(
+        "##fileformat=VCFv4.2\n"
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n",
+        encoding="utf-8",
+    )
+
+    result = batch_vcf_to_maf(
+        input_dir,
+        tmp_path / "output",
+        bundle=_bundle(tmp_path),
+        jobs=1,
+    )
+
+    assert result.failed == 0
+    assert result.items[0].status == "VALID_EMPTY"
+    assert result.items[0].source_assembly == "GRCh37"
+    assert result.items[0].attempts[0] == {
+        "stage": "assembly_detection",
+        "candidate": "GRCh37",
+        "status": "FALLBACK",
+        "detail": "VCF had no unambiguous assembly metadata",
+    }
+
+
 def test_v133_nonempty_run_places_compatibility_artifacts_in_tmp(
     tmp_path: Path,
 ) -> None:

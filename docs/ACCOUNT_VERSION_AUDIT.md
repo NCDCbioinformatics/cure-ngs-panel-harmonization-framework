@@ -1,6 +1,6 @@
 # NCDCbioinformatics account version audit
 
-Audit date: 2026-09-01
+Audit date: 2026-09-04
 
 This audit checks the public default branches of all 13 repositories owned by
 the `NCDCbioinformatics` account. Its purpose is to keep publication-facing
@@ -9,9 +9,9 @@ distribution.
 
 ## Current unified distribution
 
-- Release: [`v0.2.3`](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases/tag/v0.2.3)
-- Full image: `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3`
-- Core image: `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.3-core`
+- Release: [`v0.2.5`](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases/tag/v0.2.5)
+- Full image: `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5`
+- Core image: `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core`
 - Public-install evidence: [successful clean Ubuntu workflow](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/runs/33350796468)
 
 ## Publication-facing repositories synchronized
@@ -44,6 +44,6 @@ Docker distribution.
 
 Reviewer-facing commands must use the fully qualified GHCR name and an
 immutable release tag. A short local image such as
-`cure-ngs-harmonizer:0.2.3` is appropriate only immediately after a documented
+`cure-ngs-harmonizer:0.2.5` is appropriate only immediately after a documented
 local build. Public pull/run examples use `ghcr.io/ncdcbioinformatics/...` so
 Docker never falls back to an unrelated Docker Hub namespace.

@@ -63,7 +63,7 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/run_beginner_tutorial.ps1
 ```
 
-The launcher downloads the public `0.2.4-core` image, runs all six component
+The launcher downloads the public `0.2.5-core` image, runs all six component
 groups without container network access, checks every expected result, and
 writes outputs to a new timestamped directory under `tutorial-output/`.
 Success ends with:
@@ -93,7 +93,7 @@ The rest of this page expands the same workflow command by command.
 The following section uses a Bash shell. Start in the cloned repository:
 
 ```bash
-IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core
+IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core
 REPO="$PWD"
 OUTPUT_DIR="$REPO/tutorial-output/manual"
 
@@ -121,7 +121,7 @@ echo "Local output directory: $OUTPUT_DIR"
 cure_ngs --version
 ```
 
-The expected version is `0.2.4`. The bind mount means:
+The expected version is `0.2.5`. The bind mount means:
 
 | Docker path | Local host path | Purpose |
 | --- | --- | --- |

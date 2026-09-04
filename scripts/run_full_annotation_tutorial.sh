@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${CURE_NGS_VERSION:-0.2.4}"
+VERSION="${CURE_NGS_VERSION:-0.2.5}"
 IMAGE="${CURE_NGS_FULL_IMAGE:-ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:${VERSION}}"
 OUTPUT_DIR="${CURE_NGS_OUTPUT_ROOT:-$ROOT_DIR/tutorial-output}"
 REFERENCE_DIR="${1:-${CURE_NGS_REFERENCE_DIR:-}}"

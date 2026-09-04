@@ -43,3 +43,11 @@ class VcfFormatError(ValueError):
 class AssemblyDetectionError(ValueError):
     """Raised when assembly evidence is absent or contradictory."""
 
+
+class AssemblyUndeterminedError(AssemblyDetectionError):
+    """Raised when no usable assembly evidence is present."""
+
+
+class AssemblyEvidenceConflictError(AssemblyDetectionError):
+    """Raised when VCF metadata supports more than one genome assembly."""
+

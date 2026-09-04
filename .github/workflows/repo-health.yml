@@ -64,11 +64,11 @@ jobs:
           grep -q "export-v1.3.3-example" docs/BEGINNER_TUTORIAL.md
           grep -Fq 'NGS_VCF/VCF_ALL/test_b37.vcf' scripts/run_reviewer_demo.sh
           grep -q -- "--workspace-root" docs/V1.3.3_BATCH_WORKFLOW.md
-          grep -q "release-baseline-0.2.4" resources/tools.lock.json
-          grep -q "cure-ngs-harmonizer:0.2.4" compose.yaml
+          grep -q "release-baseline-0.2.5" resources/tools.lock.json
+          grep -q "cure-ngs-harmonizer:0.2.5" compose.yaml
           grep -q "Public Image Verification run 33350796468" docs/CLEAN_UBUNTU_VALIDATION.md
           grep -q "Current unified distribution" docs/ACCOUNT_VERSION_AUDIT.md
-          if git grep -nE 'cure-ngs-harmonizer:0\.(1\.0|2\.[0-3])' -- \
+          if git grep -nE 'cure-ngs-harmonizer:0\.(1\.0|2\.[0-4])' -- \
             ':!docs/CLEAN_UBUNTU_VALIDATION.md' \
             ':!docs/ACCOUNT_VERSION_AUDIT.md'; then
             echo "Outdated unified Docker image tag found" >&2

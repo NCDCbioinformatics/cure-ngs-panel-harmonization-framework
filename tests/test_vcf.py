@@ -5,6 +5,8 @@ import pytest
 from cure_ngs.models import (
     Assembly,
     AssemblyDetectionError,
+    AssemblyEvidenceConflictError,
+    AssemblyUndeterminedError,
     InspectionStatus,
     VcfFormatError,
 )
@@ -37,7 +39,7 @@ def test_empty_vcf_has_distinct_status() -> None:
 def test_unknown_assembly_fails_closed() -> None:
     header = ["##fileformat=VCFv4.2"]
 
-    with pytest.raises(AssemblyDetectionError, match="could not be determined"):
+    with pytest.raises(AssemblyUndeterminedError, match="could not be determined"):
         detect_assembly(header)
 
 
@@ -47,7 +49,7 @@ def test_conflicting_assembly_evidence_fails() -> None:
         "##contig=<ID=chr1,length=248956422>",
     ]
 
-    with pytest.raises(AssemblyDetectionError, match="Conflicting"):
+    with pytest.raises(AssemblyEvidenceConflictError, match="Conflicting"):
         detect_assembly(header)
 
 

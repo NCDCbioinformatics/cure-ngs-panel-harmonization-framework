@@ -3,7 +3,7 @@
 ## Supported revision release
 
 - Project: CURE-NGS Harmonizer
-- Package: `cure-ngs-harmonizer` 0.2.4
+- Package: `cure-ngs-harmonizer` 0.2.5
 - Command: `cure-ngs`
 - Maintainer account: `NCDCbioinformatics`
 - Primary target: Linux; Windows development is supported for platform-neutral

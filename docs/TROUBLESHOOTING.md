@@ -55,18 +55,18 @@ an incorrect `DOCKER_HOST`.
 
 ## GHCR pull is denied or the image cannot be found
 
-Release 0.2.4 is public; `docker login ghcr.io` is not required. Use the exact,
+Release 0.2.5 is public; `docker login ghcr.io` is not required. Use the exact,
 lowercase, fully qualified name:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.4
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5
 docker pull "$CORE_IMAGE"
 docker pull "$FULL_IMAGE"
 ```
 
 Do not pull the GHCR name and then run only
-`cure-ngs-harmonizer:0.2.4`; that short name can make Docker query Docker Hub.
+`cure-ngs-harmonizer:0.2.5`; that short name can make Docker query Docker Hub.
 Run `bash scripts/verify_public_install.sh` to test both public images and the
 complete tutorial. If the exact commands still fail, save the output of
 `docker info`, `docker context ls`, and `docker pull "$CORE_IMAGE"` for the
