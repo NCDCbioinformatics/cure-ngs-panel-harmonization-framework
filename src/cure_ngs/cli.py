@@ -75,6 +75,10 @@ def build_parser() -> argparse.ArgumentParser:
     versions.add_argument("--picard-jar")
     versions.add_argument("--vcf2maf")
 
+    self_test = subparsers.add_parser("self-test", help="Run image-contained offline checks and save actual outputs")
+    self_test.add_argument("output", help="Writable output path, normally /data/output/self-test")
+    self_test.add_argument("--profile", choices=("full", "core"), default="full")
+
     doctor = subparsers.add_parser(
         "doctor", help="Check tools and mounted resources before a workflow run"
     )
@@ -416,6 +420,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        if args.command == "self-test":
+            from .self_test import run_self_test
+            report = run_self_test(args.output, profile=args.profile)
+            print(json.dumps(report, indent=2))
+            return 0 if report["status"] == "PASS" else 2
         if args.command == "versions":
             print(
                 json.dumps(

@@ -76,6 +76,14 @@ grep -Fq 'ensembl-vep          : 116.1' "$VERSIONS_FILE"
 grep -Fq '"revision": "f6d0c40cbe4578f4a4abb450b5da33e81900cc00"' "$VERSIONS_FILE"
 
 echo
+echo "Executing the downloaded full image without host source/reference mounts"
+mkdir -p "$ROOT_DIR/tutorial-output/image-contained"
+"$ENGINE" run --rm --network none --read-only \
+  --user "$(id -u):$(id -g)" --tmpfs /tmp:size=256m,mode=1777 \
+  --volume "$ROOT_DIR/tutorial-output/image-contained:/data/output" \
+  "$FULL_IMAGE" self-test /data/output
+
+echo
 echo "[6/7] Checking the Section 13 single-reference configuration and preflight"
 PREFLIGHT_ROOT="$ROOT_DIR/tutorial-output/reference-preflight-fixture"
 PREFLIGHT_CONFIG="$ROOT_DIR/tutorial-output/reference-preflight-config"

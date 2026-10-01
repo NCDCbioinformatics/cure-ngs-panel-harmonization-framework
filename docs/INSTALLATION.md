@@ -14,7 +14,8 @@ Docker/OCI image built from this repository.
 Required:
 
 - a 64-bit Linux, macOS, or Windows host
-- [Git](https://git-scm.com/downloads)
+- [Git](https://git-scm.com/downloads) only for source builds/repository scripts;
+  it is not required for the [Docker-only workflow](DOCKER_ONLY_QUICKSTART.md)
 - [Docker Engine](https://docs.docker.com/engine/install/) on Linux, or
   [Docker Desktop](https://docs.docker.com/desktop/) on Windows/macOS
 - Docker Compose v2 when using `compose.yaml`; it is included with Docker
@@ -26,11 +27,13 @@ Recommended for the full VEP/vcf2maf route:
 
 - 4 or more CPU cores
 - 8 GB or more RAM; increase this for large panels or high VEP fork counts
-- at least 30 GB free storage for the image, GRCh37 FASTA, VEP cache, and
-  working files
+- at least 100 GiB free as an initial planning allowance for the image,
+  compressed and extracted VEP cache, FASTA, and working files; large batches
+  can require more
 
-Docker or Podman may be used. Commands below use `docker`; substitute `podman`
-where appropriate. Linux is the primary supported runtime. On Windows, use
+Docker is the validated engine for this hotfix. Podman helpers are retained,
+but Podman and ARM64 have not passed this validation. Images currently target
+Linux/amd64. On Windows, use
 Docker Desktop with the WSL 2 backend and store large reference data inside the
 WSL filesystem when possible for better I/O performance.
 

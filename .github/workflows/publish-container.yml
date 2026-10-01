@@ -68,6 +68,13 @@ jobs:
         env:
           CURE_NGS_FULL_IMAGE: cure-ngs:release-test
         run: bash scripts/run_vep_smoke.sh
+      - name: Verify image-contained command without source or reference mounts
+        run: |
+          mkdir -p image-self-test-output
+          docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+            --tmpfs /tmp:size=256m,mode=1777 --security-opt no-new-privileges:true \
+            --volume "$PWD/image-self-test-output:/data/output" \
+            cure-ngs:release-test self-test /data/output --profile ${{ matrix.variant }}
       - name: Build and publish ${{ matrix.variant }} image after verification
         uses: docker/build-push-action@v6
         with:

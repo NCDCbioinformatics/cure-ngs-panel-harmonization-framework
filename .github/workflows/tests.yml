@@ -133,6 +133,13 @@ jobs:
           CURE_NGS_IMAGE: cure-ngs:test
           CURE_NGS_SKIP_PULL: "1"
         run: bash scripts/run_beginner_tutorial.sh
+      - name: Execute the core image without source/reference mounts
+        run: |
+          mkdir -p ci-output/image-self-test
+          docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+            --tmpfs /tmp:size=256m,mode=1777 --security-opt no-new-privileges:true \
+            --volume "$PWD/ci-output/image-self-test:/data/output" \
+            cure-ngs:test self-test /data/output --profile core
 
   full-container:
     runs-on: ubuntu-22.04
@@ -146,6 +153,13 @@ jobs:
           --tag cure-ngs:full-test .
       - name: Verify pinned full-image tools
         run: docker run --rm --network none cure-ngs:full-test versions
+      - name: Execute the full image without host source or reference files
+        run: |
+          mkdir -p ci-output/image-self-test
+          docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
+            --tmpfs /tmp:size=256m,mode=1777 --security-opt no-new-privileges:true \
+            --volume "$PWD/ci-output/image-self-test:/data/output" \
+            cure-ngs:full-test self-test /data/output
       - name: Run real VEP and vcf2maf against a synthetic coding transcript
         env:
           CURE_NGS_FULL_IMAGE: cure-ngs:full-test

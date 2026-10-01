@@ -70,11 +70,17 @@ for the ownership, integration, versioning, and reviewer workflow in detail.
 
 ## Download and Install
 
+For another PC with **Docker only**, start with the
+[image-only quickstart](docs/DOCKER_ONLY_QUICKSTART.md).
+The full image now includes `self-test`: it generates results using real tools
+without mounting the source repository or external references.
+Human annotation still requires user-selected reference assets.
+
 ### 1. Install a container engine
 
 - Windows or macOS: install [Docker Desktop](https://docs.docker.com/desktop/).
 - Linux: install [Docker Engine](https://docs.docker.com/engine/install/).
-- Podman is also supported; replace `docker` with `podman` in the commands.
+- Podman compatibility helpers exist, but the current hotfix validation covers Docker only.
 
 For an otherwise empty Ubuntu 22.04 or 24.04 machine, follow the exact
 [clean-Ubuntu installation procedure](docs/INSTALLATION.md#clean-ubuntu-2204-or-2404)

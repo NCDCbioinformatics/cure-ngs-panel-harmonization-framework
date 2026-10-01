@@ -30,7 +30,11 @@ relabeled as newly generated annotations.
 ## Local verification scope, 2026-10-01
 
 - All six latest component Release locks were checked against GitHub.
-- Linux unit/integration suite: 127 passed; branch-aware coverage 77.03%.
+- Linux unit/integration suite: 133 passed; branch-aware coverage 77.61%.
+- Image-contained `self-test`: full and core PASS in the independent clean
+  Ubuntu as UID/GID 1000, with only an output mount, read-only image, and no
+  network. Full mode runs actual synthetic Picard/VEP/vcf2maf; no source or
+  external-reference mount is required. Core does not claim annotation PASS.
 - Actual VEP 116/vcf2maf coding-transcript smoke test: PASS, one missense row.
 - Real bcftools/VEP/vcf2maf regressions also passed for missing fileformat,
   bare dictionary INFO, case-insensitive plain sequence alleles,
