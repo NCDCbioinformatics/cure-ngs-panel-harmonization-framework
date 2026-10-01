@@ -48,7 +48,27 @@ jobs:
           fi
           [[ "$value" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
           echo "value=$value" >> "$GITHUB_OUTPUT"
-      - name: Build and publish ${{ matrix.variant }} image
+      - name: Build the exact candidate for execution
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          load: true
+          push: false
+          build-args: SOURCE_REVISION=${{ github.sha }}
+          tags: cure-ngs:release-test
+      - name: Gate publication on the executable tutorial
+        env:
+          CURE_NGS_IMAGE: cure-ngs:release-test
+          CURE_NGS_SKIP_PULL: "1"
+        run: bash scripts/run_beginner_tutorial.sh
+      - name: Gate full-image publication on actual VEP/vcf2maf execution
+        if: matrix.variant == 'full'
+        env:
+          CURE_NGS_FULL_IMAGE: cure-ngs:release-test
+        run: bash scripts/run_vep_smoke.sh
+      - name: Build and publish ${{ matrix.variant }} image after verification
         uses: docker/build-push-action@v6
         with:
           context: .

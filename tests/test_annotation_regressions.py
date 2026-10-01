@@ -34,9 +34,12 @@ def test_multianno_table_is_not_mislabelled_as_vcf(tmp_path):
         repair_vcf_structure(source, tmp_path / "fixed.vcf", fallback_sample="TUMOR")
 
 
-def test_dictionary_info_is_losslessly_audited_not_used_as_alleles(tmp_path):
+@pytest.mark.parametrize("braces", [True, False])
+def test_dictionary_info_is_losslessly_audited_not_used_as_alleles(tmp_path, braces):
     source = tmp_path / "original.vcf"
     raw = "{'location': 'exonic', 'origAlt': 'X;Y,Z=foo', 'depth': 4, 'tags': ['a b', 'c']}"
+    if not braces:
+        raw = raw[1:-1]
     source.write_text(VCF.replace("PASS\t.\tGT", f"PASS\t{raw}\tGT"))
     output = repair_vcf_structure(source, tmp_path / "fixed.vcf", fallback_sample="TUMOR")
     assert inspect_vcf(output).record_count == 1
@@ -49,7 +52,7 @@ def test_dictionary_info_is_losslessly_audited_not_used_as_alleles(tmp_path):
 
 @pytest.mark.parametrize("text", [
     "{'bad,key': 1}", "{'x': 1, 'x': 2}", "{'x': {'nested': 1}}",
-    "{'x': __import__('os').system('false')}", "'location':'exonic'",
+    "{'x': __import__('os').system('false')}", "'location'='exonic'",
 ])
 def test_ambiguous_or_executable_info_rejected(text):
     with pytest.raises(ValueError):

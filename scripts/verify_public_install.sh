@@ -73,7 +73,7 @@ grep -Fq "\"version\": \"$VERSION\"" "$VERSIONS_FILE"
 grep -Fq 'bcftools 1.13' "$VERSIONS_FILE"
 grep -Fq 'samtools 1.13' "$VERSIONS_FILE"
 grep -Fq 'ensembl-vep          : 116.1' "$VERSIONS_FILE"
-grep -Fq '"revision": "754d68ab4ad3eba29199c5a62e0061745aed7e7e"' "$VERSIONS_FILE"
+grep -Fq '"revision": "f6d0c40cbe4578f4a4abb450b5da33e81900cc00"' "$VERSIONS_FILE"
 
 echo
 echo "[6/7] Checking the Section 13 single-reference configuration and preflight"
@@ -110,6 +110,12 @@ CONTAINER_ENGINE="$ENGINE" \
   CURE_NGS_IMAGE="$CORE_IMAGE" \
   CURE_NGS_SKIP_PULL=1 \
   bash "$ROOT_DIR/scripts/run_beginner_tutorial.sh"
+
+echo
+echo "Checking actual VEP/vcf2maf execution in the downloaded full image"
+CONTAINER_ENGINE="$ENGINE" CURE_NGS_FULL_IMAGE="$FULL_IMAGE" \
+  bash "$ROOT_DIR/scripts/run_vep_smoke.sh" \
+  "$ROOT_DIR/tutorial-output/public-full-image-smoke"
 
 echo
 echo "CURE-NGS public installation verified"

@@ -30,8 +30,11 @@ relabeled as newly generated annotations.
 ## Local verification scope, 2026-10-01
 
 - All six latest component Release locks were checked against GitHub.
-- Linux unit/integration suite: 125 passed; branch-aware coverage 76.94%.
+- Linux unit/integration suite: 126 passed; branch-aware coverage 76.98%.
 - Actual VEP 116/vcf2maf coding-transcript smoke test: PASS, one missense row.
+- Real bcftools/VEP/vcf2maf regressions also passed for missing fileformat,
+  bare dictionary INFO, concurrent identical input basenames/sample prefixes,
+  and a changed-allele rerun. These are tiny synthetic-transcript tests.
 - Six-component offline beginner tutorial: PASS after Windows/WSL fixes.
 - Independent official Ubuntu 22.04.5 WSL2 distribution, initially without
   Git/Docker/images: cold full-image build, anonymous hello-world pull, real

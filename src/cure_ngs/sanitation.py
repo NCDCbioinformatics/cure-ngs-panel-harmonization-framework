@@ -8,6 +8,12 @@ import re
 from urllib.parse import quote
 
 _TAG = re.compile(r"[A-Za-z_][A-Za-z0-9_.]*\Z")
+_BARE_MAPPING = re.compile(r"^[\"'][^\"']+[\"']\s*:")
+
+
+def looks_like_dictionary_info(info: str) -> bool:
+    text = info.strip()
+    return text.startswith("{") or bool(_BARE_MAPPING.match(text))
 
 
 def validate_tag(key: str) -> None:
@@ -36,13 +42,17 @@ def repair_legacy_info(info: str, *, line_number: int) -> str:
     text = info.strip()
     if not text:
         return "."
-    if not text.startswith("{"):
+    if not looks_like_dictionary_info(text):
         if text != ".":
             items = [item for item in text.split(";") if item]
             for item in items:
                 validate_tag(item.partition("=")[0])
             return ";".join(items) or "."
         return info
+    if not text.startswith("{"):
+        # Some exporters omit only the outer braces. The entire mapping still
+        # has to parse as a literal with validated string keys and flat values.
+        text = "{" + text + "}"
     try:
         tree = ast.parse(text, mode="eval")
         if not isinstance(tree.body, ast.Dict):

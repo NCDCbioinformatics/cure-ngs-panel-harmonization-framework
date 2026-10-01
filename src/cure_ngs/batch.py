@@ -25,7 +25,7 @@ from .liftover import LiftoverRun, liftover_vcf
 from .models import Assembly, AssemblyUndeterminedError, VcfInspection
 from .provenance import write_manifest
 from .reference_bundle import ReferenceBundle, ResourceCandidate
-from .sanitation import repair_legacy_info, validate_tag
+from .sanitation import looks_like_dictionary_info, repair_legacy_info, validate_tag
 from .tools import normalize_vcf, partition_small_variant_records
 from .vcf import inspect_vcf
 
@@ -426,7 +426,7 @@ def repair_vcf_structure(
         original_info = fields[7]
         fields[7] = repair_legacy_info(original_info, line_number=index + 1)
         if fields[7] != original_info:
-            audit.append({"line": index + 1, "action": "dictionary_INFO_to_VCF" if original_info.strip().startswith("{") else "empty_INFO_to_missing_or_empty_delimiter_removed",
+            audit.append({"line": index + 1, "action": "dictionary_INFO_to_VCF" if looks_like_dictionary_info(original_info) else "empty_INFO_to_missing_or_empty_delimiter_removed",
                           "original_info": original_info, "repaired_info": fields[7]})
         lines[index] = "\t".join(fields)
     formats = [line for line in lines[:header_index] if line.startswith("##fileformat=")]

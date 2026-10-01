@@ -12,7 +12,7 @@ Specific redistributed material:
 
 - `examples/public/vcf2maf/test_b37.vcf` is copied unchanged from the MSKCC
   vcf2maf repository at revision
-  `754d68ab4ad3eba29199c5a62e0061745aed7e7e`. It is distributed under the
+  `f6d0c40cbe4578f4a4abb450b5da33e81900cc00`. It is distributed under the
   Apache License 2.0 reproduced in the same example directory. Its checksum and
   upstream Git blob ID are recorded there.
 - `examples/component-tests/` redistributes the authors' public component test

@@ -4,13 +4,21 @@
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="${CURE_NGS_FULL_IMAGE:-cure-ngs:full-test}"
+ENGINE="${CONTAINER_ENGINE:-docker}"
+USER_OPTIONS=(--user "$(id -u):$(id -g)")
+SECURITY_OPT="no-new-privileges:true"
+if "$ENGINE" --version | grep -qi podman; then
+  SECURITY_OPT="no-new-privileges"
+  if [ "$(id -u)" -ne 0 ]; then USER_OPTIONS+=(--userns keep-id); fi
+fi
 OUTPUT="${1:-$ROOT_DIR/ci-output/vep-smoke}"
 mkdir -p "$OUTPUT"
 OUTPUT="$(cd "$OUTPUT" && pwd)"
 RUN_OUTPUT="$(mktemp -d "$OUTPUT/run.XXXXXX")"
-docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
-  --tmpfs /tmp:size=256m,mode=1777 --security-opt no-new-privileges:true \
+"$ENGINE" run --rm --network none --read-only "${USER_OPTIONS[@]}" \
+  --tmpfs /tmp:size=256m,mode=1777 --security-opt "$SECURITY_OPT" \
   --volume "$ROOT_DIR/tests/fixtures/synthetic:/fixtures:ro" \
+  --volume "$ROOT_DIR/scripts/verify_annotation_regressions.py:/scripts/verify_annotation_regressions.py:ro" \
   --volume "$RUN_OUTPUT:/work" --entrypoint /bin/bash "$IMAGE" -lc '
     set -euo pipefail
     cp /fixtures/vep-smoke.fa /work/reference.fa
@@ -29,4 +37,5 @@ docker run --rm --network none --read-only --user "$(id -u):$(id -g)" \
       --temporary-directory /work/tmp --vcf-tumor-id TUMOR --tumor-id smoke \
       > /work/vcf2maf.stdout.log 2> /work/vcf2maf.stderr.log
     python3 -c "import csv; rows=list(csv.DictReader((l for l in open(\"/work/smoke.maf\") if not l.startswith(\"#\")),delimiter=chr(9))); assert len(rows)==1, rows; assert rows[0][\"Variant_Classification\"]==\"Missense_Mutation\", rows; assert rows[0][\"Tumor_Sample_Barcode\"]==\"smoke\", rows; print(\"PASS: real VEP116/vcf2maf produced one missense MAF row\")"
+    python3 /scripts/verify_annotation_regressions.py /work /fixtures/vep-smoke.vcf
   '
