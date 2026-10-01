@@ -34,6 +34,18 @@ def test_multianno_table_is_not_mislabelled_as_vcf(tmp_path):
         repair_vcf_structure(source, tmp_path / "fixed.vcf", fallback_sample="TUMOR")
 
 
+def test_plain_allele_case_is_canonicalized_without_changing_original(tmp_path):
+    source = tmp_path / "lowercase.vcf"
+    source.write_text(VCF.replace("\tA\tC\t", "\ta\tc,t\t"))
+    original = source.read_bytes()
+    output = repair_vcf_structure(source, tmp_path / "fixed.vcf", fallback_sample="TUMOR")
+    record = next(line for line in output.read_text().splitlines() if not line.startswith("#"))
+    assert record.split("\t")[3:5] == ["A", "C,T"]
+    assert source.read_bytes() == original
+    audit = json.loads(output.with_suffix(".vcf.sanitation.json").read_text())
+    assert audit["changes"][0]["action"] == "uppercase_sequence_alleles"
+
+
 @pytest.mark.parametrize("braces", [True, False])
 def test_dictionary_info_is_losslessly_audited_not_used_as_alleles(tmp_path, braces):
     source = tmp_path / "original.vcf"

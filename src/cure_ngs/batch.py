@@ -423,6 +423,15 @@ def repair_vcf_structure(
         fields = lines[index].split("\t")
         if len(fields) < 8:
             raise ValueError(f"VCF record has fewer than 8 columns at line {index + 1}")
+        if re.fullmatch(r"[ACGTNacgtn]+", fields[3]) and all(
+            re.fullmatch(r"[ACGTNacgtn]+", alt) for alt in fields[4].split(",")
+        ):
+            original_ref, original_alt = fields[3:5]
+            fields[3], fields[4] = original_ref.upper(), original_alt.upper()
+            if fields[3:5] != [original_ref, original_alt]:
+                audit.append({"line": index + 1, "action": "uppercase_sequence_alleles",
+                              "original_ref": original_ref, "original_alt": original_alt,
+                              "repaired_ref": fields[3], "repaired_alt": fields[4]})
         original_info = fields[7]
         fields[7] = repair_legacy_info(original_info, line_number=index + 1)
         if fields[7] != original_info:

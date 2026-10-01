@@ -24,6 +24,7 @@ def run(label, alt):
     source = job / "legacy.vcf"
     text = template.replace("##fileformat=VCFv4.2\n", "")
     text = text.replace("\tG\tA\t", f"\tG\t{alt}\t")
+    text = text.replace(f"\tG\t{alt}\t", f"\tg\t{alt.lower()}\t")
     text = text.replace("PASS\t.\t", "PASS\t'location':'exonic','origAlt':'metadata;not-an-allele'\t")
     source.write_text(text)
     before = source.read_bytes()

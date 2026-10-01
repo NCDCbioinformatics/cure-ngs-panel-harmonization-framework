@@ -33,10 +33,10 @@ image recipes are under `docker/`.
 
 ## Verification baseline
 
-- The local Linux suite passes 126 tests, including real bcftools integration
+- The local Linux suite passes 127 tests, including real bcftools integration
   and regressions for legacy INFO/header repair, parallel temporary paths,
   cache identity, stale VEP outputs, and atomic MAF publication.
-- Branch-aware coverage is 76.98% in this hotfix audit; CI enforces at least 70%.
+- Branch-aware coverage is 77.03% in this hotfix audit; CI enforces at least 70%.
 - The full-image smoke test executes actual VEP 116 and vcf2maf 1.6.22 against
   a synthetic coding transcript. This is distinct from human-cache validation;
   see [the scope and current results](ANNOTATION_HOTFIX.md).
