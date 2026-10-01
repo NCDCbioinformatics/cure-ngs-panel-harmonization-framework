@@ -388,7 +388,8 @@ def test_v133_nonempty_run_places_compatibility_artifacts_in_tmp(
         )
         Path(kwargs["stdout_log"]).write_text("stdout\n", encoding="utf-8")
         Path(kwargs["stderr_log"]).write_text("stderr\n", encoding="utf-8")
-        assert Path(kwargs["temporary_directory"]) == workspace.temporary_directory
+        assert Path(kwargs["temporary_directory"]).is_relative_to(workspace.temporary_directory / ".cure-ngs-work")
+        assert Path(kwargs["temporary_directory"]) != workspace.temporary_directory
         return AnnotationRun(
             (), "SUCCESS", 1, 1, "GRCh37", "sample", "TUMOR", None, None, 116, "abc"
         )
@@ -411,10 +412,10 @@ def test_v133_nonempty_run_places_compatibility_artifacts_in_tmp(
     assert [path.name for path in workspace.maf_directory.iterdir()] == ["sample.maf"]
     assert (workspace.temporary_directory / ".lock.sample.vcf2maf").is_file()
     assert (
-        workspace.temporary_directory / "sample.vcf2maf.bad.stdout.log"
+        next(workspace.temporary_directory.glob("sample.vcf2maf.bad.*.stdout.log"))
     ).read_text(encoding="utf-8") == "stdout\n"
     assert (
-        workspace.temporary_directory / "sample.vcf2maf.bad.stderr.log"
+        next(workspace.temporary_directory.glob("sample.vcf2maf.bad.*.stderr.log"))
     ).read_text(encoding="utf-8") == "stderr\n"
     assert Path(result.items[0].manifest).parent == workspace.manifest_directory
     log_row = Path(result.log_tsv).read_text(encoding="utf-8").splitlines()[1]

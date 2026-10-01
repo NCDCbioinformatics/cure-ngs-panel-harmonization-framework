@@ -3,8 +3,8 @@ FROM docker.io/ensemblorg/ensembl-vep:release_116.1@sha256:6972667883d89b9fa55e5
 ARG DEBIAN_FRONTEND=noninteractive
 ARG PICARD_VERSION=3.1.1
 ARG PICARD_SHA256=15c79f51fd0ac001049f9dd7b9bac1dbdf759dcb0230a89c7f6d1f246e8bbab4
-ARG VCF2MAF_REVISION=754d68ab4ad3eba29199c5a62e0061745aed7e7e
-ARG VCF2MAF_ARCHIVE_SHA256=e2f1d754a95ed30ec0193c743273e446ac8fbef8b5ab4027d458fa66f85711ed
+ARG VCF2MAF_REVISION=f6d0c40cbe4578f4a4abb450b5da33e81900cc00
+ARG VCF2MAF_ARCHIVE_SHA256=7489aaebf7faa75e49818f578dc4a40b3c3d52d9d9ca85d23f90e2f9676d75b1
 ARG SOURCE_REVISION=uncommitted
 
 USER root
@@ -64,12 +64,12 @@ ENV LC_ALL=C.UTF-8 \
     PYTHONUNBUFFERED=1 \
     TZ=UTC \
     VCF2MAF_PATH=/opt/vcf2maf/vcf2maf.pl \
-    VCF2MAF_REVISION=754d68ab4ad3eba29199c5a62e0061745aed7e7e \
+    VCF2MAF_REVISION=f6d0c40cbe4578f4a4abb450b5da33e81900cc00 \
     VEP_CACHE_DIR=/references/vep
 
 LABEL org.opencontainers.image.title="CURE-NGS Harmonizer" \
       org.opencontainers.image.description="Reproducible panel NGS variant harmonization" \
-      org.opencontainers.image.version="0.2.5-vep116.1" \
+      org.opencontainers.image.version="0.2.6-vep116.1" \
       org.opencontainers.image.source="https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework" \
       org.opencontainers.image.revision="${SOURCE_REVISION}" \
       org.opencontainers.image.licenses="MIT"

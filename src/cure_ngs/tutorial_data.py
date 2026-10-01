@@ -102,12 +102,14 @@ def export_tutorial_data(
     destination.mkdir(parents=True, exist_ok=True)
 
     for name in ("README.md", "manifest.json"):
-        shutil.copy2(root / name, destination / name)
+        # Content-only copies work on Windows/WSL bind mounts that reject
+        # chmod/utime from the image UID. Integrity is checked by SHA-256.
+        shutil.copyfile(root / name, destination / name)
     for entry in manifest["files"]:
         relative = _safe_relative_path(entry["path"])
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(root / relative, target)
+        shutil.copyfile(root / relative, target)
         if _sha256(target) != entry["sha256"]:
             raise OSError(f"Exported tutorial file failed SHA-256 verification: {relative}")
 
@@ -148,8 +150,8 @@ def export_v133_example_workspace(
             + "; pass --force to overwrite only these bundled example files"
         )
 
-    shutil.copy2(source_root / "inputs" / "test_b37.vcf", input_target)
-    shutil.copy2(source_root / "expected" / "test_b37.maf", maf_target)
+    shutil.copyfile(source_root / "inputs" / "test_b37.vcf", input_target)
+    shutil.copyfile(source_root / "expected" / "test_b37.maf", maf_target)
     log_target.write_text(
         "datetime\tvcf_path\tsample_tag8\tref_info\tis_gvcf\thas_normal\t"
         "status\tmessage\tfinal_vcf\n"

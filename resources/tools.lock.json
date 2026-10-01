@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "release-baseline-0.2.5",
+  "status": "release-baseline-0.2.6",
   "tools": {
     "bcftools": {
       "version": "1.13",
@@ -47,10 +47,11 @@
       "sha256": "15c79f51fd0ac001049f9dd7b9bac1dbdf759dcb0230a89c7f6d1f246e8bbab4"
     },
     "vcf2maf": {
-      "revision": "754d68ab4ad3eba29199c5a62e0061745aed7e7e",
+      "version": "1.6.22",
+      "revision": "f6d0c40cbe4578f4a4abb450b5da33e81900cc00",
       "filename": "vcf2maf.pl",
-      "sha256": "f669a0799d4f99462479443fd6f4d7c8cb1f2c05fa901bdb4ff867a0f618e92c",
-      "source_archive_sha256": "e2f1d754a95ed30ec0193c743273e446ac8fbef8b5ab4027d458fa66f85711ed"
+      "sha256": "139d5f8f836659ae1cecd1c1a4012252702175a9c9acf0f75c0e3a8e8e9bdc83",
+      "source_archive_sha256": "7489aaebf7faa75e49818f578dc4a40b3c3d52d9d9ca85d23f90e2f9676d75b1"
     }
   }
 }

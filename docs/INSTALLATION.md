@@ -1,5 +1,9 @@
 # Installation and deployment
 
+> The 0.2.6 commands below target the hotfix release. On its source branch,
+> build locally until the registry images are published; an unpublished tag
+> cannot be pulled. See [annotation hotfix status](ANNOTATION_HOTFIX.md).
+
 This guide is written for a reviewer or external institution starting from a
 clean computer. CURE-NGS does not require the host institution to reproduce the
 authors' Python environment. The recommended runtime is the version-pinned
@@ -116,7 +120,7 @@ The full image contains VEP, vcf2maf, Picard, bcftools, SAMtools, Perl, Java,
 and the Python application. It does not contain the large genome resources.
 
 ```bash
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6
 docker build \
   --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   --file docker/Dockerfile \
@@ -127,7 +131,7 @@ The core image is smaller and is sufficient for the network-free reviewer
 walkthrough, normalization, table processing, and concordance:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6-core
 docker build \
   --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
   --file docker/Dockerfile.core \
@@ -137,7 +141,7 @@ docker build \
 Confirm that the image starts and inspect every detected tool:
 
 ```bash
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6
 docker run --rm "$FULL_IMAGE" versions
 docker run --rm "$FULL_IMAGE" --help
 ```
@@ -146,8 +150,8 @@ Tagged releases publish immutable full and core images to GitHub Container
 Registry. They can be obtained without a local build:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6
 docker pull "$CORE_IMAGE"
 docker pull "$FULL_IMAGE"
 docker run --rm "$CORE_IMAGE" --version
@@ -156,7 +160,7 @@ docker run --rm "$FULL_IMAGE" versions
 
 These public images do not require `docker login`. Keep the complete
 `ghcr.io/ncdcbioinformatics/...` name in subsequent `docker run` commands; the
-short name `cure-ngs-harmonizer:0.2.5` is a separate local/Docker Hub name.
+short name `cure-ngs-harmonizer:0.2.6` is a separate local/Docker Hub name.
 
 Both images also contain the public six-component test bundle. Confirm it is
 present and export an ordinary host-side copy before using the beginner

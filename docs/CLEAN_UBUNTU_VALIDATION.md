@@ -1,6 +1,13 @@
 # Clean Ubuntu installation validation
 
-This record documents the current external-user validation of CURE-NGS
+> Historical scope correction (2026-10-01): the 0.2.5 record below verified
+> pulls, tool inventory, preprocessing, frozen outputs, and the core tutorial.
+> It did **not** validate real human-cache VEP annotation. The old full image
+> combines VEP 116 with a vcf2maf revision that passes deprecated `--af_esp`
+> and fails on non-empty annotation input. Do not interpret the old PASS rows
+> as end-to-end VEP validation. See [the annotation hotfix](ANNOTATION_HOTFIX.md).
+
+This historical record documents the external-user validation of CURE-NGS
 `v0.2.5`. The check uses public release artifacts and a fresh GitHub-hosted
 Ubuntu runner; it does not rely on an author workstation, a pre-pulled
 CURE-NGS image, or GHCR credentials.

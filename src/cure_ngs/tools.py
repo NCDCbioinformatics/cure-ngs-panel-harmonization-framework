@@ -12,6 +12,29 @@ from .vcf import sanitize_vcf
 _PLAIN_ALLELE = re.compile(r"^[ACGTNacgtn]+$")
 
 
+def partition_small_variant_records(input_path: Path, supported_path: Path, excluded_path: Path) -> dict[str, int]:
+    """Retain excluded records verbatim; never invent linear alleles for SVs.
+
+    Mixed symbolic/sequence ALT records are conservatively excluded whole.
+    gVCF records are handled by the separate gVCF extraction route.
+    """
+    supported = excluded = 0
+    with input_path.open(encoding="utf-8-sig") as reader, supported_path.open("w", encoding="utf-8", newline="\n") as small, excluded_path.open("w", encoding="utf-8", newline="\n") as other:
+        for line in reader:
+            if line.startswith("#"):
+                small.write(line)
+                other.write(line)
+                continue
+            fields = line.rstrip("\r\n").split("\t")
+            if _PLAIN_ALLELE.fullmatch(fields[3]) and all(_PLAIN_ALLELE.fullmatch(alt) for alt in fields[4].split(",")):
+                small.write(line)
+                supported += 1
+            else:
+                other.write(line)
+                excluded += 1
+    return {"supported_records": supported, "excluded_records": excluded}
+
+
 def filter_plain_small_variant_records(
     input_path: str | Path, output_path: str | Path
 ) -> dict[str, int]:

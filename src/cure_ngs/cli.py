@@ -305,6 +305,7 @@ def build_parser() -> argparse.ArgumentParser:
     annotate.add_argument("--cache-version", required=True, type=int)
     annotate.add_argument("--vep-data", required=True)
     annotate.add_argument("--vcf2maf")
+    annotate.add_argument("--vep-config", help="Optional VEP configuration file, passed unchanged to vcf2maf")
     annotate.add_argument("--vep-path")
     annotate.add_argument("--tumor-id")
     annotate.add_argument("--vcf-tumor-id")
@@ -823,6 +824,7 @@ def main(argv: list[str] | None = None) -> int:
                 vcf_normal_id=args.vcf_normal_id,
                 forks=args.forks,
                 temporary_directory=args.temporary_directory,
+                vep_config=args.vep_config,
             )
             manifest = args.manifest or f"{args.output}.manifest.json"
             write_manifest(

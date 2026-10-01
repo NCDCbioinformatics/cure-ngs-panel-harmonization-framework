@@ -2,6 +2,13 @@
 
 Audit date: 2026-09-04
 
+> Historical account-wide audit, not a 0.2.6 release-verification record.
+> Its old full-image tool inventory did not validate real VEP annotation.
+> Current source corrections and validation scope are in
+> [ANNOTATION_HOTFIX.md](ANNOTATION_HOTFIX.md). Component Release locks were
+> rechecked on 2026-10-01; all account READMEs have not yet been re-audited
+> for the unpublished 0.2.6 candidate.
+
 This audit checks the public default branches of all 13 repositories owned by
 the `NCDCbioinformatics` account. Its purpose is to keep publication-facing
 CURE-NGS installation instructions synchronized with the supported unified

@@ -1,0 +1,7 @@
+##fileformat=VCFv4.2
+##reference=GRCh37
+##contig=<ID=1,length=33>
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	TUMOR
+1	4	.	G	A	60	PASS	.	GT:AD	0/1:20,10

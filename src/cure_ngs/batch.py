@@ -25,7 +25,8 @@ from .liftover import LiftoverRun, liftover_vcf
 from .models import Assembly, AssemblyUndeterminedError, VcfInspection
 from .provenance import write_manifest
 from .reference_bundle import ReferenceBundle, ResourceCandidate
-from .tools import normalize_vcf
+from .sanitation import repair_legacy_info, validate_tag
+from .tools import normalize_vcf, partition_small_variant_records
 from .vcf import inspect_vcf
 
 
@@ -368,7 +369,11 @@ def repair_vcf_structure(
             index for index, line in enumerate(lines) if line.startswith("#CHROM")
         )
     except StopIteration as exc:
-        raise ValueError("VCF is missing the #CHROM header") from exc
+        raise ValueError(
+            "Not a VCF: missing #CHROM header. ANNOVAR multianno tables must be "
+            "converted using their documented genomic-column schema first; "
+            "renaming a table to .vcf is not sufficient."
+        ) from exc
     header = lines[header_index].split("\t")
     data_index = next(
         (
@@ -408,10 +413,37 @@ def repair_vcf_structure(
     header_index = next(
         index for index, line in enumerate(lines) if line.startswith("#CHROM")
     )
+    fixed = ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"]
+    if lines[header_index].split("\t")[:8] != fixed:
+        raise ValueError("Not a VCF: fixed columns must be #CHROM POS ID REF ALT QUAL FILTER INFO")
+    audit: list[dict[str, object]] = []
+    for index in range(header_index + 1, len(lines)):
+        if not lines[index] or lines[index].startswith("#"):
+            continue
+        fields = lines[index].split("\t")
+        if len(fields) < 8:
+            raise ValueError(f"VCF record has fewer than 8 columns at line {index + 1}")
+        original_info = fields[7]
+        fields[7] = repair_legacy_info(original_info, line_number=index + 1)
+        if fields[7] != original_info:
+            audit.append({"line": index + 1, "action": "dictionary_INFO_to_VCF" if original_info.strip().startswith("{") else "empty_INFO_to_missing_or_empty_delimiter_removed",
+                          "original_info": original_info, "repaired_info": fields[7]})
+        lines[index] = "\t".join(fields)
+    formats = [line for line in lines[:header_index] if line.startswith("##fileformat=")]
+    if not formats:
+        lines.insert(0, "##fileformat=VCFv4.2")
+        header_index += 1
+        audit.append({"action": "added_missing_fileformat", "value": "VCFv4.2"})
+    elif len(formats) != 1 or lines[0] != formats[0]:
+        raise ValueError("VCF must have exactly one ##fileformat declaration as its first line")
     _inject_missing_vcf_definitions(lines, header_index)
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    destination.with_suffix(destination.suffix + ".sanitation.json").write_text(
+        json.dumps({"source": str(source), "changes": audit}, indent=2) + "\n",
+        encoding="utf-8",
+    )
     return destination
 
 
@@ -448,11 +480,14 @@ def _inject_missing_vcf_definitions(lines: list[str], header_index: int) -> None
                     continue
                 key, separator, _value = item.partition("=")
                 if key:
+                    validate_tag(key)
                     observed_info[key] = observed_info.get(key, False) or bool(separator)
         if len(fields) >= 9 and fields[8] not in {"", "."}:
             observed_format.update(item for item in fields[8].split(":") if item)
 
     additions: list[str] = []
+    for key in observed_format | observed_filter:
+        validate_tag(key)
     for key in sorted(set(observed_info) - declared_info):
         if observed_info[key]:
             additions.append(
@@ -683,7 +718,7 @@ def _annotate_with_reference_fallback(
     attempts: list[dict[str, str]],
     sample_tag: str,
     compatibility_tmp_directory: Path | None,
-) -> tuple[ResourceCandidate, AnnotationRun, Path]:
+) -> tuple[ResourceCandidate, AnnotationRun | None, Path]:
     failures: list[str] = []
     for index, candidate in enumerate(bundle.references_for(target_assembly), start=1):
         try:
@@ -704,23 +739,30 @@ def _annotate_with_reference_fallback(
                 reference_fasta=candidate.path,
                 bcftools=bcftools,
             )
-            _remove_if_present(output_maf)
+            if inspect_vcf(normalized, require_assembly=False).record_count == 0:
+                write_empty_maf(output_maf)
+                attempts.append({"stage": "small_variant_filter", "candidate": candidate.label,
+                                 "status": "NO_SUPPORTED_SMALL_VARIANTS",
+                                 "detail": "No sequence-resolved SNV/indel/MNV remains; symbolic SV/breakend records are not small-variant MAFs"})
+                return candidate, None, normalized
             compatibility_label = re.sub(r"[^A-Za-z0-9._-]", "_", candidate.label)
+            # vcf2maf names its VEP output after the input basename. Every job
+            # and every fallback attempt therefore needs its own directory,
+            # even when reproducing the historical VCF_ALL_TMP layout.
+            annotation_tmp = work_directory / f"vcf2maf-{index}"
             if compatibility_tmp_directory is None:
-                annotation_tmp = work_directory / f"vcf2maf-{index}"
                 stdout_log = None
                 stderr_log = None
             else:
-                annotation_tmp = compatibility_tmp_directory
                 lock_path = compatibility_tmp_directory / (
                     f".lock.{sample_tag}.vcf2maf"
                 )
                 lock_path.touch(exist_ok=True)
                 stdout_log = compatibility_tmp_directory / (
-                    f"{sample_tag}.vcf2maf.{compatibility_label}.stdout.log"
+                    f"{output_maf.stem}.vcf2maf.{compatibility_label}.{work_directory.name.rsplit('.', 1)[-1]}.stdout.log"
                 )
                 stderr_log = compatibility_tmp_directory / (
-                    f"{sample_tag}.vcf2maf.{compatibility_label}.stderr.log"
+                    f"{output_maf.stem}.vcf2maf.{compatibility_label}.{work_directory.name.rsplit('.', 1)[-1]}.stderr.log"
                 )
             with _sample_lock(annotation_tmp, sample_tag):
                 annotation = annotate_vcf(
@@ -790,6 +832,8 @@ def _process_one(
     sample_tag = stem[:sample_tag_length]
     output_maf = output_directory / f"{stem}.maf"
     manifest = manifest_directory / f"{stem}.maf.manifest.json"
+    output_existed = output_maf.is_file()
+    manifest_existed = manifest.is_file()
     work_directory = work_root / f"{stem}.{uuid4().hex[:12]}"
     attempts: list[dict[str, str]] = []
     detected: Assembly | None = None
@@ -867,6 +911,27 @@ def _process_one(
             )
 
         target_input = repaired
+        small_input = work_directory / "01.sequence-resolved.vcf"
+        excluded_input = work_directory / "01.excluded-symbolic-or-unsupported.vcf"
+        partition = partition_small_variant_records(repaired, small_input, excluded_input)
+        if partition["excluded_records"]:
+            target_input = small_input
+            attempts.append({"stage": "small_variant_partition", "candidate": "sequence-resolved",
+                             "status": "EXCLUDED_UNSUPPORTED",
+                             "detail": json.dumps({**partition, "excluded_vcf": str(excluded_input)})})
+        if partition["supported_records"] == 0 and not is_gvcf:
+            write_empty_maf(output_maf)
+            write_manifest(manifest, command=["cure-ngs", "batch-vcf-to-maf"],
+                inputs={"vcf": input_path, "reference_config": bundle.config_path},
+                outputs={"annotated_maf": output_maf, "excluded_vcf": excluded_input},
+                parameters={"status": "NO_SUPPORTED_SMALL_VARIANTS", "input_inspection": inspection.to_dict(),
+                            "source_assembly": detected.value, "target_assembly": target_assembly.value,
+                            "partition": partition, "attempts": attempts},
+                tools={"vcf2maf": "not run: symbolic SV/breakend input is outside the small-variant MAF route"})
+            return BatchItemResult(str(input_path.resolve()), str(output_maf.resolve()), str(manifest.resolve()),
+                "NO_SUPPORTED_SMALL_VARIANTS", "No small-variant annotation performed; excluded records retained in VCF_ALL_TMP",
+                sample_tag, detected.value, target_assembly.value, is_gvcf, has_normal,
+                None, None, str(excluded_input.resolve()), tuple(attempts))
         if is_gvcf:
             gvcf_output = work_directory / "01.gvcf-small-variants.vcf"
             commands = extract_small_variants(
@@ -980,7 +1045,7 @@ def _process_one(
                 sample_tag=sample_tag,
                 compatibility_tmp_directory=compatibility_tmp_directory,
             )
-            status = annotation.status
+            status = annotation.status if annotation is not None else "NO_SUPPORTED_SMALL_VARIANTS"
 
         manifest_inputs: dict[str, str | Path] = {
             "vcf": input_path,
@@ -997,6 +1062,8 @@ def _process_one(
                 "target_assembly": target_assembly.value,
                 "sample": asdict(sample),
                 "is_gvcf": is_gvcf,
+                "input_inspection": inspection.to_dict(),
+                "sanitation_audit": str(repaired.with_suffix(repaired.suffix + ".sanitation.json")),
                 "chosen_reference": (
                     chosen_reference.to_dict() if chosen_reference else None
                 ),
@@ -1031,8 +1098,10 @@ def _process_one(
             tuple(attempts),
         )
     except Exception as exc:
-        _remove_if_present(output_maf)
-        _remove_if_present(manifest)
+        if not output_existed:
+            _remove_if_present(output_maf)
+        if not manifest_existed:
+            _remove_if_present(manifest)
         return BatchItemResult(
             str(input_path.resolve()),
             str(output_maf.resolve()),
@@ -1100,7 +1169,9 @@ def _write_v133_log(path: Path, items: Iterable[BatchItemResult]) -> None:
         for item in items:
             valid_empty = item.status.startswith("VALID_EMPTY")
             success = item.status != "FAILED"
-            if valid_empty:
+            if item.status == "NO_SUPPORTED_SMALL_VARIANTS":
+                message = "No small-variant annotation performed; symbolic SV/breakends retained separately"
+            elif valid_empty:
                 message = "VCF has no variants; created empty MAF header"
             elif success and item.chosen_reference:
                 message = f"vcf2maf completed with ref={item.chosen_reference}"
@@ -1114,7 +1185,8 @@ def _write_v133_log(path: Path, items: Iterable[BatchItemResult]) -> None:
                     "ref_info": _v133_ref_info(item),
                     "is_gvcf": int(item.is_gvcf),
                     "has_normal": int(item.has_normal),
-                    "status": "SUCCESS" if success else "FAILED",
+                    "status": ("NO_SUPPORTED_SMALL_VARIANTS" if item.status == "NO_SUPPORTED_SMALL_VARIANTS"
+                               else "SUCCESS" if success else "FAILED"),
                     "message": message,
                     "final_vcf": item.final_vcf or item.input_path,
                 }

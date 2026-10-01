@@ -2,14 +2,40 @@ from __future__ import annotations
 
 import csv
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from functools import lru_cache
+from uuid import uuid4
 
 from .models import Assembly, InspectionStatus
 from .provenance import sha256_file
 from .vcf import inspect_vcf
+
+
+@lru_cache(maxsize=32)
+def _vep_major(vep_executable: str) -> int:
+    result = subprocess.run([vep_executable, "--help"], check=True, capture_output=True, text=True)
+    match = re.search(r"ensembl-vep\s*:\s*(\d+)", result.stdout + result.stderr, re.IGNORECASE)
+    if not match:
+        raise ValueError("Cannot verify the VEP executable version")
+    return int(match.group(1))
+
+
+def validate_annotation_configuration(vep_path: Path, vcf2maf_path: Path, vep_data: Path, assembly: Assembly, cache_version: int) -> None:
+    major = _vep_major(str(vep_path / "vep"))
+    if major != cache_version:
+        raise ValueError(f"VEP/cache version mismatch: VEP {major}, configured cache {cache_version}. Install the matching {major}_{assembly.value} cache; do not rename an older cache directory.")
+    if major >= 114 and " --af_esp" in vcf2maf_path.read_text(encoding="utf-8"):
+        raise ValueError("Incompatible vcf2maf: deprecated --af_esp with recent VEP. Use the pinned vcf2maf 1.6.22 or later.")
+    info = vep_data / "homo_sapiens" / f"{cache_version}_{assembly.value}" / "info.txt"
+    if not info.is_file():
+        raise FileNotFoundError(f"VEP cache metadata missing: {info}")
+    metadata = dict(line.rstrip("\n").split("\t", 1) for line in info.read_text().splitlines() if "\t" in line)
+    if metadata.get("species") != "homo_sapiens" or metadata.get("assembly") != assembly.value:
+        raise ValueError(f"VEP cache species/assembly mismatch: {info}")
 
 
 @dataclass(frozen=True)
@@ -116,6 +142,7 @@ def annotate_vcf(
     temporary_directory: str | Path | None = None,
     stdout_log: str | Path | None = None,
     stderr_log: str | Path | None = None,
+    vep_config: str | Path | None = None,
 ) -> AnnotationRun:
     if forks < 1:
         raise ValueError("VEP forks must be at least 1")
@@ -141,6 +168,7 @@ def annotate_vcf(
         raise FileNotFoundError(vep_data)
     if not (vep_path / "vep").is_file():
         raise FileNotFoundError(vep_path / "vep")
+    validate_annotation_configuration(vep_path, vcf2maf_path, vep_data, assembly, cache_version)
 
     inspection = inspect_vcf(input_path, assembly_override=assembly)
     resolved_tumor_id, resolved_vcf_tumor, resolved_normal_id, resolved_vcf_normal = (
@@ -154,7 +182,10 @@ def annotate_vcf(
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = Path(temporary_directory or output_path.parent / f".{output_path.name}.tmp")
+    tmp_root = Path(temporary_directory or output_path.parent / f".{output_path.name}.tmp")
+    # vcf2maf may reuse an existing .vep.vcf. Isolate every invocation, including
+    # direct annotate-vcf calls and reruns with the same explicit temporary dir.
+    tmp_path = tmp_root / f"run-{uuid4().hex}"
     tmp_path.mkdir(parents=True, exist_ok=True)
     command = [
         "perl",
@@ -162,7 +193,7 @@ def annotate_vcf(
         "--input-vcf",
         str(input_path),
         "--output-maf",
-        str(output_path),
+        str(tmp_path / "annotated.maf"),
         "--tumor-id",
         resolved_tumor_id,
         "--vep-path",
@@ -184,6 +215,10 @@ def annotate_vcf(
     ]
     if resolved_vcf_tumor:
         command.extend(["--vcf-tumor-id", resolved_vcf_tumor])
+    if vep_config is not None:
+        if not Path(vep_config).is_file():
+            raise FileNotFoundError(vep_config)
+        command.extend(["--vep-config", str(vep_config)])
     if resolved_normal_id and resolved_vcf_normal:
         command.extend(
             [
@@ -217,25 +252,36 @@ def annotate_vcf(
             output=completed.stdout,
             stderr=completed.stderr,
         )
-    header, output_rows = inspect_maf(output_path)
+    staged_maf = tmp_path / "annotated.maf"
+    header, output_rows = inspect_maf(staged_maf)
     if inspection.record_count > 0 and output_rows == 0:
         raise ValueError(
             "Annotation produced zero MAF rows from a non-empty VCF"
         )
     build_index = header.index("NCBI_Build")
     if output_rows:
-        with output_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        with staged_maf.open("r", encoding="utf-8-sig", newline="") as handle:
             reader = csv.reader(
                 (line for line in handle if line.strip() and not line.startswith("#")),
                 delimiter="\t",
             )
             next(reader)
-            observed_builds = {row[build_index] for row in reader}
+            rows = list(reader)
+            observed_builds = {row[build_index] for row in rows}
         if observed_builds != {assembly.value}:
             raise ValueError(
                 f"Annotated MAF build mismatch: expected {assembly.value}, "
                 f"observed {sorted(observed_builds)}"
             )
+        barcode_index = header.index("Tumor_Sample_Barcode")
+        observed_barcodes = {row[barcode_index] for row in rows}
+        if observed_barcodes != {resolved_tumor_id}:
+            raise ValueError(f"Annotated MAF tumor ID mismatch: expected {resolved_tumor_id}, observed {sorted(observed_barcodes)}")
+
+    # Publish only validated MAFs, atomically and on the destination filesystem.
+    publish_path = output_path.with_name(f".{output_path.name}.{uuid4().hex}.partial")
+    shutil.copyfile(staged_maf, publish_path)
+    publish_path.replace(output_path)
 
     return AnnotationRun(
         command=tuple(command),

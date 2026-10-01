@@ -14,6 +14,7 @@ from .models import (
     VcfFormatError,
     VcfInspection,
 )
+from .sanitation import validate_tag
 
 
 _ASSEMBLY_PATTERNS: dict[Assembly, tuple[re.Pattern[str], ...]] = {
@@ -127,6 +128,8 @@ def inspect_vcf(
                 column_header = line.split("\t")
                 if len(column_header) < 8:
                     raise VcfFormatError("#CHROM header has fewer than 8 columns")
+                if column_header[:8] != ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"]:
+                    raise VcfFormatError("Invalid VCF fixed-column header")
                 continue
             if not line:
                 if column_header is not None:
@@ -159,6 +162,14 @@ def inspect_vcf(
                 raise VcfFormatError(f"POS must be positive at line {line_number}")
             if not fields[3] or fields[3] == ".":
                 raise VcfFormatError(f"Missing REF at line {line_number}")
+            # Legacy public fixtures use an empty INFO as missing metadata;
+            # batch sanitation writes its canonical dot and records the change.
+            if fields[7] not in {"", "."}:
+                try:
+                    for item in fields[7].split(";"):
+                        validate_tag(item.partition("=")[0])
+                except ValueError as exc:
+                    raise VcfFormatError(f"Invalid INFO at line {line_number}: {exc}") from exc
 
             alleles = fields[4].split(",")
             if not fields[4] or fields[4] == "." or any(not allele for allele in alleles):
@@ -176,6 +187,9 @@ def inspect_vcf(
 
     if column_header is None:
         raise VcfFormatError("VCF is missing the #CHROM header")
+    formats = [line for line in header_lines if line.startswith("##fileformat=")]
+    if len(formats) != 1 or header_lines[0] != formats[0]:
+        raise VcfFormatError("VCF must start with exactly one ##fileformat declaration; use batch sanitation for legacy VCF headers")
 
     detected, evidence = detect_assembly(
         header_lines, required=require_assembly and assembly_override is None

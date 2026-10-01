@@ -55,18 +55,19 @@ an incorrect `DOCKER_HOST`.
 
 ## GHCR pull is denied or the image cannot be found
 
-Release 0.2.5 is public; `docker login ghcr.io` is not required. Use the exact,
+Published public releases do not require `docker login ghcr.io`. If 0.2.6
+is still a source candidate, build it locally until publication. Use the exact,
 lowercase, fully qualified name:
 
 ```bash
-CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core
-FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5
+CORE_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6-core
+FULL_IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6
 docker pull "$CORE_IMAGE"
 docker pull "$FULL_IMAGE"
 ```
 
 Do not pull the GHCR name and then run only
-`cure-ngs-harmonizer:0.2.5`; that short name can make Docker query Docker Hub.
+`cure-ngs-harmonizer:0.2.6`; that short name can make Docker query Docker Hub.
 Run `bash scripts/verify_public_install.sh` to test both public images and the
 complete tutorial. If the exact commands still fail, save the output of
 `docker info`, `docker context ls`, and `docker pull "$CORE_IMAGE"` for the
@@ -86,6 +87,14 @@ The image runs without root privileges. On Linux, make the bind-mounted output
 directory writable by UID/GID 10001 or override the Compose UID/GID with the
 current host identity. Do not make reference or input mounts writable merely to
 work around an output permission error.
+
+## `chmod: Operation not permitted` on a Windows/WSL output mount
+
+Use the updated beginner script, which runs Docker with the current host UID/GID
+and does not require `chmod 0777` or metadata changes on shared Windows files.
+Select an output directory writable by your account; do not disable input or
+reference read-only mounts. On a native Linux filesystem, permissions still
+apply normally.
 
 ## FASTA index is missing
 

@@ -1,5 +1,14 @@
+* text=auto eol=lf
 *.sh text eol=lf
 *.ps1 text eol=crlf
+*.fa text eol=lf
+*.fai text eol=lf
+*.vcf text eol=lf
+*.maf text eol=lf
+*.tsv text eol=lf
+*.json text eol=lf
+*.gff text eol=lf
+*.gtf text eol=lf
 *.png binary
 *.xlsx binary
 examples/component-tests/LICENSE.MSKCC-vcf2maf.Apache-2.0 binary

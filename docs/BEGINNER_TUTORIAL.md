@@ -63,7 +63,7 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/run_beginner_tutorial.ps1
 ```
 
-The launcher downloads the public `0.2.5-core` image, runs all six component
+The launcher downloads the public `0.2.6-core` image, runs all six component
 groups without container network access, checks every expected result, and
 writes outputs to a new timestamped directory under `tutorial-output/`.
 Success ends with:
@@ -93,7 +93,7 @@ The rest of this page expands the same workflow command by command.
 The following section uses a Bash shell. Start in the cloned repository:
 
 ```bash
-IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.5-core
+IMAGE=ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6-core
 REPO="$PWD"
 OUTPUT_DIR="$REPO/tutorial-output/manual"
 
@@ -121,7 +121,7 @@ echo "Local output directory: $OUTPUT_DIR"
 cure_ngs --version
 ```
 
-The expected version is `0.2.5`. The bind mount means:
+The expected version is `0.2.6`. The bind mount means:
 
 | Docker path | Local host path | Purpose |
 | --- | --- | --- |
@@ -422,7 +422,7 @@ REFERENCE_DIR="$HOME/cure-ngs-reference-store"
 mkdir -p "$REFERENCE_DIR/vep"
 
 docker pull ensemblorg/ensembl-vep:release_116.1
-docker run --rm -it \
+docker run --rm -it --user "$(id -u):$(id -g)" \
   --volume "$REFERENCE_DIR/vep:/data" \
   ensemblorg/ensembl-vep:release_116.1 \
   INSTALL.pl -a cf -s homo_sapiens -y GRCh37 -c /data
@@ -430,7 +430,9 @@ docker run --rm -it \
 
 The final `-c /data` is essential. Without it, `INSTALL.pl` uses the container's
 default cache directory and the downloaded files disappear when that temporary
-container exits. A successful installation contains at least:
+container exits. The host UID/GID keeps installed data writable by the same
+Linux/WSL account without a blanket permission change. PowerShell users can
+omit the Bash `--user` expression. A successful installation contains at least:
 
 ```text
 vep/homo_sapiens/116_GRCh37/info.txt

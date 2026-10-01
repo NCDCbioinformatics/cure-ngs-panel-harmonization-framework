@@ -3,7 +3,7 @@
 ## Supported revision release
 
 - Project: CURE-NGS Harmonizer
-- Package: `cure-ngs-harmonizer` 0.2.5
+- Package: `cure-ngs-harmonizer` 0.2.6
 - Command: `cure-ngs`
 - Maintainer account: `NCDCbioinformatics`
 - Primary target: Linux; Windows development is supported for platform-neutral
@@ -24,7 +24,7 @@
 | SAMtools | 1.13 |
 | Ensembl VEP | 116.1, digest-pinned base image |
 | Picard | 3.1.1, SHA-256 validated JAR |
-| vcf2maf | `754d68ab4ad3eba29199c5a62e0061745aed7e7e` |
+| vcf2maf | 1.6.22, `f6d0c40cbe4578f4a4abb450b5da33e81900cc00` |
 | openpyxl | 3.1.5, wheel hash pinned |
 | et-xmlfile | 2.0.0, wheel hash pinned |
 
@@ -33,9 +33,13 @@ image recipes are under `docker/`.
 
 ## Verification baseline
 
-- The suite collects 85 tests: 83 platform-independent tests plus two bcftools
-  integration cases exercised by the Linux container job.
-- Branch-aware coverage is 70.40%; CI enforces at least 70%.
+- The local Linux suite passes 125 tests, including real bcftools integration
+  and regressions for legacy INFO/header repair, parallel temporary paths,
+  cache identity, stale VEP outputs, and atomic MAF publication.
+- Branch-aware coverage is 76.94% in this hotfix audit; CI enforces at least 70%.
+- The full-image smoke test executes actual VEP 116 and vcf2maf 1.6.22 against
+  a synthetic coding transcript. This is distinct from human-cache validation;
+  see [the scope and current results](ANNOTATION_HOTFIX.md).
 - Synthetic tests include CSV delimiter regression, VCF assembly inference,
   multiallelic splitting, left alignment, REF validation, empty-VCF behavior,
   HGVS/gene/fusion normalization, negative-strand insertion mapping, frozen REST

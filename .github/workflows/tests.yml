@@ -146,6 +146,10 @@ jobs:
           --tag cure-ngs:full-test .
       - name: Verify pinned full-image tools
         run: docker run --rm --network none cure-ngs:full-test versions
+      - name: Run real VEP and vcf2maf against a synthetic coding transcript
+        env:
+          CURE_NGS_FULL_IMAGE: cure-ngs:full-test
+        run: bash scripts/run_vep_smoke.sh
       - name: Verify the Section 13 single-reference contract
         run: |
           mkdir -p \

@@ -25,12 +25,15 @@ command -v "$ENGINE" >/dev/null 2>&1 || {
 }
 
 SECURITY_OPT="no-new-privileges:true"
+USER_OPTIONS=(--user "$(id -u):$(id -g)")
 if "$ENGINE" --version 2>/dev/null | grep -qi podman; then
   SECURITY_OPT="no-new-privileges"
+  if [ "$(id -u)" -ne 0 ]; then
+    USER_OPTIONS+=(--userns keep-id)
+  fi
 fi
 
 mkdir -p "$OUTPUT_DIR"
-chmod 0777 "$OUTPUT_DIR"
 
 if [ "${CURE_NGS_SKIP_BUILD:-0}" = "1" ]; then
   echo "[1/11] Using prebuilt core image $IMAGE"
@@ -44,6 +47,7 @@ fi
 
 run_cure_ngs() {
   "$ENGINE" run --rm --network none --read-only \
+    "${USER_OPTIONS[@]}" \
     --tmpfs /tmp:size=256m,mode=1777 \
     --security-opt "$SECURITY_OPT" \
     --mount "type=bind,source=$OUTPUT_DIR,target=/data/output" \
@@ -99,7 +103,6 @@ grep -q $'GENE\tsynthetic_sample_001\tchr1\t10\t10\tC\tT\tGRCh37' \
 
 echo "[7/11] Converting minimal MAF to a reference-valid VCF"
 mkdir -p "$OUTPUT_DIR/from-minimal"
-chmod 0777 "$OUTPUT_DIR/from-minimal"
 run_cure_ngs minimal-maf-to-vcf \
   /opt/cure-ngs/examples/synthetic/minimal.grch37.maf \
   /data/output/from-minimal \
@@ -124,7 +127,6 @@ grep -q '"rows": 2625' "$OUTPUT_DIR/hgvs-original-summary.json"
 
 echo "[9/11] Calculating exact cross-route concordance"
 mkdir -p "$OUTPUT_DIR/concordance"
-chmod 0777 "$OUTPUT_DIR/concordance"
 run_cure_ngs compare-maf-routes /data/output/concordance \
   --reference-maf /opt/cure-ngs/examples/synthetic/concordance_direct.grch37.maf \
   --query-maf /opt/cure-ngs/examples/synthetic/concordance_report.grch37.maf \
@@ -137,7 +139,6 @@ echo "[10/11] Executing the V1.3.3 four-directory workspace contract"
 mkdir -p "$OUTPUT_DIR/NGS_VCF_RUNTIME_TEST/VCF_ALL"
 cp "$ROOT_DIR/examples/synthetic/batch-input/empty.grch37.vcf" \
   "$OUTPUT_DIR/NGS_VCF_RUNTIME_TEST/VCF_ALL/"
-chmod -R 0777 "$OUTPUT_DIR/NGS_VCF_RUNTIME_TEST"
 run_cure_ngs batch-vcf-to-maf \
   --workspace-root /data/output/NGS_VCF_RUNTIME_TEST \
   --reference-config /opt/cure-ngs/examples/synthetic/reference-config.reviewer.json \
