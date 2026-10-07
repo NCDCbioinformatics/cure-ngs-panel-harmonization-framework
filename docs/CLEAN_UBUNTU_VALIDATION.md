@@ -1,5 +1,33 @@
 # Clean Ubuntu installation validation
 
+## 0.2.6 real annotation audit, 2026-10-07
+
+An independent official Ubuntu 22.04.5 x86-64 WSL2 installation was set up
+initially without Docker, Git, or CURE-NGS images. This is a separate WSL2
+installation, not a standalone Hyper-V VM. Execution used host UID/GID 1000,
+a read-only container, no container network, and explicit read-only reference
+mounts. No clinical inputs or individual results are published.
+
+The official VEP 116 GRCh37 human cache passed its official checksum and
+gzip integrity checks. Both `--jobs 1` and `--jobs 4` processed 25 supplied
+VCFs with zero failed files: 21 actual small-variant MAFs, 16,286 MAF rows
+per run, and four SV-only files preserved without claiming annotation.
+Four variants were separately preserved and excluded from MAF: two known
+non-primary cache-unavailable variants and two incompatible legacy hg19 chrM
+variants. Exact eligible-input/MAF accounting, all-column serial/parallel
+MAF agreement, preserved-VCF record agreement, manifest sidecar checksums,
+and unchanged hashes for all 25 original inputs passed.
+
+The Linux unit/integration suite passed 146 tests with 78.44% combined
+statement/branch coverage. See [the complete correction scope](ANNOTATION_HOTFIX.md)
+and the [privacy-safe aggregate record](../validation/cure_ngs_0.2.6_verification.json).
+Image-contained self-tests and executable tutorials are separate release
+gates. Public availability is announced on the release page only after both
+images publish and anonymous installation passes; local builds alone do not
+establish anonymous registry availability.
+
+## Historical 0.2.5 pull-only record
+
 > Historical scope correction (2026-10-01): the 0.2.5 record below verified
 > pulls, tool inventory, preprocessing, frozen outputs, and the core tutorial.
 > It did **not** validate real human-cache VEP annotation. The old full image
@@ -12,7 +40,7 @@ This historical record documents the external-user validation of CURE-NGS
 Ubuntu runner; it does not rely on an author workstation, a pre-pulled
 CURE-NGS image, or GHCR credentials.
 
-## Current validation record
+### Historical validation record
 
 | Property | Value |
 | --- | --- |
@@ -110,5 +138,5 @@ configuration, and `doctor-bundle` validation are documented in
 [V1.3.3 batch workflow guide](V1.3.3_BATCH_WORKFLOW.md).
 
 The earlier from-zero Docker Engine installation audit for `v0.2.1` remains
-available in the repository's release history. This page tracks the currently
-supported public distribution.
+available in the repository's release history. Historical pull-only records
+do not substitute for the 0.2.6 real annotation audit above.

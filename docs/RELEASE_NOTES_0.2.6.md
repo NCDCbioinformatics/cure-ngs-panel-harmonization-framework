@@ -49,6 +49,16 @@ produced 25 MAF rows on the host output mount. This is distinct from copying
 the bundled historical reference MAF. Supplied clinical input files and
 their per-variant results are not release assets.
 
+Supplied-data real human annotation passed independently at `--jobs 1` and
+`--jobs 4`: 21 small-variant MAFs containing 16,286 rows per run, with exact
+all-column agreement and unchanged SHA-256 for all 25 original inputs.
+Four SV-only files remained explicitly unannotated and preserved. Four
+variants were retained in a separate excluded VCF with reasons and checksums:
+two non-primary contigs unavailable in the cache and two legacy hg19
+mitochondrial-reference-incompatible variants. Eligible-input/MAF record
+accounting passed exactly. This is an execution/determinism check, not
+independent clinical or variant-truth validation.
+
 Image publication is gated on executable tests. This release page is
 created only after both image variants publish successfully and anonymous
 public installation verification passes.

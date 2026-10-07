@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "audit_date": "2026-10-07",
+  "version": "0.2.6",
+  "software_source_revision": "70543b9d62d68a9fc43d28c6a2871fc79bc6518c",
+  "environment": "Independent Ubuntu 22.04.5 x86-64 WSL2 installation, initially without Docker, Git or CURE-NGS images",
+  "scope": "Software execution, record accounting, input immutability and serial/parallel determinism; not independent clinical or variant-truth validation",
+  "automated_tests": {"passed": 146, "combined_statement_branch_coverage_percent": 78.44},
+  "software_execution_gates": {
+    "full_image_contained_self_test_without_source_or_reference_mounts": "PASS",
+    "core_image_contained_self_test_without_source_or_reference_mounts": "PASS",
+    "full_and_core_six_component_beginner_tutorial": "PASS",
+    "actual_synthetic_vep_picard_vcf2maf_regressions": "PASS",
+    "section13_actual_human_vep_cache_annotation": "PASS_25_INPUT_VARIANTS_25_NEW_MAF_ROWS",
+    "actual_human_cache_rcrs_compatible_synthetic_mitochondrial_variant": "PASS_1_INPUT_VARIANT_1_MAF_ROW_NO_EXCLUSION"
+  },
+  "official_human_cache": {
+    "species": "homo_sapiens", "assembly": "GRCh37", "version": 116,
+    "archive_bytes": 24640319966,
+    "bsd_sum": "60680 24062813",
+    "sha256": "81cf164fc6869a3942a0c1eda16061572047380a5844e6a4056f371087dc147b",
+    "official_checksum_and_gzip_integrity": "PASS"
+  },
+  "supplied_data_actual_annotation": {
+    "input_files": 25,
+    "jobs_tested": [1, 4],
+    "vep_forks_per_job": 1,
+    "small_variant_maf_files": 21,
+    "maf_rows_per_run": 16286,
+    "sv_only_files_preserved_not_annotated": 4,
+    "excluded_variants_preserved_in_separate_vcf": 4,
+    "excluded_reasons": {
+      "NO_FEATURE_DIRECTORY_IN_SELECTED_VEP_CACHE": 2,
+      "MITOCHONDRIAL_REFERENCE_INCOMPATIBLE_WITH_GRCH_RCRS": 2
+    },
+    "eligible_variant_to_maf_row_accounting": "PASS_EXACT",
+    "serial_parallel_all_maf_columns": "PASS_EXACT",
+    "serial_parallel_preserved_vcf_records": "PASS_EXACT",
+    "original_input_sha256_unchanged": 25,
+    "excluded_vcf_and_accounting_audit_hashes": "PASS",
+    "inhibit_vep_or_precomputed_annotation_copy_used": false
+  },
+  "clinical_inputs_identifiers_per_variant_results_or_private_logs_published": false
+}

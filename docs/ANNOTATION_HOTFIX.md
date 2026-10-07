@@ -51,10 +51,23 @@ relabeled as newly generated annotations.
 - Supplied VCF preprocessing: 25 inputs, 21 sequence-resolved routes passed;
   four SV-only inputs retained separately. Real bcftools REF validation,
   left alignment, splitting, duplicate removal, and Picard liftover were run.
-- Full supplied-data VEP116/GRCh37 annotation: the official cache download
-  passed checksum and gzip integrity checks. A strict accounting audit
-  found non-primary-contig omissions, and a corrected run is required
-  before publication. Preprocessing PASS is not annotation PASS.
+- Full supplied-data VEP116/GRCh37 annotation: PASS on 25 supplied files at
+  `--jobs 1` and `--jobs 4`. Each run generated 21 actual small-variant MAFs
+  with 16,286 rows; four SV-only files remained explicitly unannotated and
+  preserved. Four additional variants were preserved separately and excluded
+  from MAF: two known non-primary cache-unavailable variants and two legacy
+  hg19 mitochondrial-reference-incompatible variants.
+- Every eligible input allele had a MAF row. Serial/parallel MAF results
+  matched exactly across all columns (after row-order normalization), as did
+  the preserved excluded VCF records. All 25 original input SHA-256 hashes
+  remained unchanged; manifest sidecar hashes and exclusion reasons matched.
+- Real Section 13 annotation using the official human cache: 25 public input
+  variants produced 25 newly annotated MAF rows. A separate artificial MT
+  variant against a genuine NC_012920.1-compatible reference also produced
+  one MAF row with no exclusion; mitochondrial variants are not blanket-dropped.
+- [Privacy-safe aggregate verification record](../validation/cure_ngs_0.2.6_verification.json).
+  These checks verify software execution and accounting, not independent
+  clinical interpretation or variant-calling accuracy.
 
 Clinical inputs, identifiers, local paths, per-variant results, and private
 logs are not published. Aggregate summaries can be reported without the data.
