@@ -9,10 +9,13 @@ Retrieved 2026-10-07. Line endings are normalized to LF; the LF SHA-256
 digests are pinned and checked in `cure_ngs.contig_synonyms.REPORTS`.
 Only official aliases are used. GenBank and RefSeq accessions are equated
 only where the assembly report marks their sequences as identical (`=`).
-The primary chromosomes are left to the selected VEP cache's own synonyms.
+The selected VEP cache's own synonyms are retained, including primary names.
 This is sequence-name lookup, not liftover or coordinate reconstruction.
 
 When no custom VEP configuration is supplied, known non-primary sequences
 absent from the selected cache are preserved verbatim in a separate VCF
-and excluded from the annotated MAF. Unknown names and primary chromosomes
-are not silently excluded. MAF record accounting must pass before publication.
+and excluded from the annotated MAF. Unknown names and nuclear primary
+chromosomes are not silently excluded. Mitochondrial reference identity is
+checked against NC_012920.1's complete sequence hash; a legacy/non-rCRS
+mitochondrion is preserved separately rather than relabelled for annotation.
+MAF record accounting must pass before publication.

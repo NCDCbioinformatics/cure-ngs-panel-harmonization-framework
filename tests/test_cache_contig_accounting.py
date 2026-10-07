@@ -1,4 +1,5 @@
 import json
+import hashlib
 import subprocess
 from pathlib import Path
 from unittest.mock import patch
@@ -49,6 +50,56 @@ def test_per_invocation_synonyms_configuration(tmp_path):
         assert config.read_text() == f"synonyms {directory / 'assembly-contig-synonyms.tsv'}\n"
         assert "GL000212.1\tchrUn_gl000212\n" in (directory / "assembly-contig-synonyms.tsv").read_text()
     assert (directories[0] / "default-vep.config").read_text() != (directories[1] / "default-vep.config").read_text()
+
+
+def test_added_aliases_keep_existing_cache_synonyms(tmp_path):
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    original = "MT\tchrM\nMT\tNC_012920.1\n1\tchr1\n"
+    (cache / "chr_synonyms.txt").write_text(original)
+    work = tmp_path / "work"
+    work.mkdir()
+    write_default_vep_config(work, Assembly.GRCH37, cache)
+    combined = (work / "assembly-contig-synonyms.tsv").read_text()
+    assert combined.startswith(original)
+    assert "GL000212.1\tchrUn_gl000212\n" in combined
+    assert (cache / "chr_synonyms.txt").read_text() == original
+
+
+@pytest.mark.parametrize("mito_length", [16571, 16569])
+def test_legacy_or_non_rcrs_mitochondrion_is_preserved_not_renamed(tmp_path, mito_length):
+    source, reference, _, _, cache = annotation_resources(tmp_path)
+    _records(source, ("1", "chrM"))
+    reference.write_text(">chrM\n" + "A" * mito_length + "\n")
+    Path(f"{reference}.fai").write_text(f"chrM\t{mito_length}\t6\t{mito_length}\t{mito_length + 1}\n")
+    original = source.read_bytes()
+    work = tmp_path / "work"
+    work.mkdir()
+    partition = partition_cache_contigs(source, work, cache / "homo_sapiens/116_GRCh37", Assembly.GRCH37, reference)
+    assert partition.eligible_records == partition.excluded_records == 1
+    assert "chrM\t10\t.\tA\tC\t" in partition.excluded_vcf.read_text()
+    evidence = json.loads(partition.audit.read_text())
+    assert evidence["excluded_contigs"][0]["reason"] == "MITOCHONDRIAL_REFERENCE_INCOMPATIBLE_WITH_GRCH_RCRS"
+    assert evidence["mitochondrial_reference"]["chrM"]["length"] == mito_length
+    assert source.read_bytes() == original
+
+
+def test_exact_mito_contig_identity_with_both_chrM_and_chrMT(tmp_path, monkeypatch):
+    # Synthetic sequences test the identity guard; not a human-reference claim.
+    import cure_ngs.contig_synonyms as module
+    source, reference, _, _, cache = annotation_resources(tmp_path)
+    _records(source, ("chrM", "chrMT"))
+    sequence = "C" * 16569
+    monkeypatch.setattr(module, "RCRS_SEQUENCE_SHA256", hashlib.sha256(sequence.encode()).hexdigest())
+    first = ">chrM\n" + "A" * 16571 + "\n"
+    reference.write_text(first + ">chrMT\n" + sequence + "\n")
+    Path(f"{reference}.fai").write_text(f"chrM\t16571\t6\t16571\t16572\nchrMT\t16569\t{len(first) + 7}\t16569\t16570\n")
+    work = tmp_path / "work"
+    work.mkdir()
+    partition = partition_cache_contigs(source, work, cache / "homo_sapiens/116_GRCh37", Assembly.GRCH37, reference)
+    assert partition.eligible_records == partition.excluded_records == 1
+    assert "chrMT\t10" in partition.annotation_vcf.read_text()
+    assert "chrM\t10" in partition.excluded_vcf.read_text()
 
 
 def test_partition_preserves_no_cache_contigs_without_rewriting_alleles(tmp_path):

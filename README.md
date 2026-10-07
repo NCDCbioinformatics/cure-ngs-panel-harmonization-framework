@@ -357,8 +357,8 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The 7 October 2026 Linux verification passes 142 tests with bcftools available
-and reports 78.33% combined statement and branch coverage, exceeding the
+The 7 October 2026 Linux verification passes 146 tests with bcftools available
+and reports 78.44% combined statement and branch coverage, exceeding the
 required 70% floor. Real-tool checks can skip on a host without the corresponding
 executables; image execution is verified separately. The Linux container job
 separately runs the complete beginner six-component walkthrough under hardened

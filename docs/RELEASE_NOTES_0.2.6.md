@@ -26,12 +26,17 @@ release assets and historical reference MAFs remain unchanged for provenance.
   cache in a separate VCF, excluding them from MAF with explicit reason,
   count, and checksum. Require exact eligible-input/MAF row accounting;
   unexpected omissions fail without replacing a previous valid result.
+- Preserve the selected cache's existing synonyms when adding official
+  aliases. Check mitochondrial sequence identity against NC_012920.1;
+  UCSC hg19's older chrM is not interchangeable with Ensembl GRCh37 MT.
+  Incompatible mitochondrial variants remain in the excluded VCF with an
+  explicit reference-identity reason, without changing coordinates or alleles.
 - Add image-contained `self-test`: no repository clone, host Python, or
   human-reference download is required for the software regression checks.
 
 ## Verification
 
-On 7 October 2026, the local suite passed 142 tests with 78.33% combined
+On 7 October 2026, the local suite passed 146 tests with 78.44% combined
 statement/branch coverage. Latest release locks for all six historical
 components were reconfirmed. Latest full/core image-contained self-tests and
 six-component beginner tutorials passed in an independent Ubuntu 22.04.5

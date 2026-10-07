@@ -9,6 +9,9 @@
 *.json text eol=lf
 *.gff text eol=lf
 *.gtf text eol=lf
+# Preserve the original NCBI metadata tabs in checksum-pinned reports.
+src/cure_ngs/data/contig_synonyms/*_assembly_report.txt whitespace=-blank-at-eol
+examples/synthetic/self-test/identity.chain whitespace=-blank-at-eof
 *.png binary
 *.xlsx binary
 examples/component-tests/LICENSE.MSKCC-vcf2maf.Apache-2.0 binary

@@ -25,6 +25,24 @@ from the original shell script.
 
 ## Recommended directory layout
 
+### Mitochondrial reference compatibility
+
+UCSC hg19's older `chrM` (NC_001807, 16,571 bases) differs from the GRCh37
+mitochondrial reference `MT` / newer UCSC `chrMT` (NC_012920.1, rCRS, 16,569
+bases). They cannot be exchanged by renaming the contig. UCSC documents the
+difference in its [gene annotation FAQ](https://www.genome.ucsc.edu/FAQ/FAQgenes.html).
+
+With default VEP configuration, CURE-NGS checks the selected mitochondrial
+FASTA's full uppercase sequence SHA-256 against NC_012920.1:
+`f156ff3f65bbcc80c7ebb9936dceb96b1477b4f8f535c4e1dbe7baea225cbc66`.
+Nonmatching mitochondrial variants are preserved unchanged in the excluded
+VCF, not incorrectly annotated with rCRS-based transcript coordinates. This
+does not alter the GRCh37/hg19 default for compatible nuclear chromosomes.
+An explicit custom `--vep-config` bypasses this default cache policy and must
+provide annotation sources compatible with its own reference.
+
+### External reference folders
+
 ```text
 references/
 |-- reference-config.json

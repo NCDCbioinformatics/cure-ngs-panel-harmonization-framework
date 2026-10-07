@@ -68,8 +68,8 @@ class FastaReference:
             )
         return matches[0]
 
-    def fetch(self, chromosome: str, start: int, end: int) -> str:
-        contig = self.resolve_contig(chromosome)
+    def fetch(self, chromosome: str, start: int, end: int, *, resolve_aliases: bool = True) -> str:
+        contig = self.resolve_contig(chromosome) if resolve_aliases else chromosome
         entry = self.entries[contig]
         if start < 1 or end < start or end > entry.length:
             raise ValueError(

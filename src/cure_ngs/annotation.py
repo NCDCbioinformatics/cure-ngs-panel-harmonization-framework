@@ -208,9 +208,10 @@ def annotate_vcf(
     # An explicit custom VEP configuration is passed unchanged. Its annotation
     # sources may not be cache directories, so do not apply the default policy.
     if vep_config is None:
-        vep_config = write_default_vep_config(tmp_path, assembly)
+        cache_directory = vep_data / "homo_sapiens" / f"{cache_version}_{assembly.value}"
+        vep_config = write_default_vep_config(tmp_path, assembly, cache_directory)
         partition = partition_cache_contigs(input_path, tmp_path,
-            vep_data / "homo_sapiens" / f"{cache_version}_{assembly.value}", assembly)
+            cache_directory, assembly, reference_fasta)
         annotation_input = partition.annotation_vcf
         annotation_input_records = partition.eligible_records
         excluded_contig_records = partition.excluded_records
@@ -265,7 +266,7 @@ def annotate_vcf(
     if no_cache_supported:
         # Not an annotation success and not a genuinely empty input. Preserve
         # every excluded allele in the sidecar without inventing gene labels.
-        staged_maf.write_text("# No variants annotated: see excluded-no-cache-contigs.vcf\n"
+        staged_maf.write_text("# No variants annotated: see excluded-cache-unsupported-contigs.vcf\n"
             "NCBI_Build\tChromosome\tStart_Position\tReference_Allele\tTumor_Seq_Allele2\tTumor_Sample_Barcode\n", encoding="utf-8")
         completed = subprocess.CompletedProcess(command, 0, "", "No cache-supported variants; no VEP annotation performed\n")
     else:
