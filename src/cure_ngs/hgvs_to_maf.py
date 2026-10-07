@@ -14,6 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from . import __version__
 from .fasta import FastaReference
 from .hgvs import normalize_hgvs
 from .models import Assembly
@@ -336,7 +337,7 @@ def _http_get(url: str, *, timeout_seconds: float) -> tuple[int, bytes, dict[str
         headers={
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "cure-ngs-harmonizer/0.2.5",
+            "User-Agent": f"cure-ngs-harmonizer/{__version__}",
         },
     )
     try:

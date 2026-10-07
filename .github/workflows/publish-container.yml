@@ -88,3 +88,30 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework
+
+  public-release:
+    # A release page must not advertise images that failed their execution gate.
+    needs: publish
+    if: github.event_name == 'push' && github.ref_name == 'v0.2.6'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: Verify anonymous installation of the published images
+        env:
+          CURE_NGS_VERSION: 0.2.6
+        run: |
+          export DOCKER_CONFIG="$(mktemp -d)"
+          bash scripts/verify_public_install.sh
+      - name: Create the authorized release from its existing tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          test -s docs/RELEASE_NOTES_0.2.6.md
+          bash scripts/render_release_notes.sh "$RELEASE_TAG" \
+            docs/RELEASE_NOTES_0.2.6.md > release-notes.md
+          gh release create "$RELEASE_TAG" --verify-tag \
+            --title "CURE-NGS $RELEASE_TAG" \
+            --notes-file release-notes.md

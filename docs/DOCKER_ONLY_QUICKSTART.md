@@ -1,7 +1,10 @@
 # Use CURE-NGS on another computer: Docker-only workflow
 
-> 0.2.6 is an unpublished hotfix candidate. The pull commands below describe
-> the intended release interface, not a currently available registry tag.
+> Version 0.2.6 corrects the real annotation failures in the old full image.
+> The [release page](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases)
+> announces image availability after execution and anonymous-install gates.
+> If publication is still in progress, build the source instead of assuming
+> that a registry tag is already available.
 > Do not use the broken 0.2.5 full image for real annotation.
 > [Current verification scope](ANNOTATION_HOTFIX.md).
 

@@ -12,11 +12,13 @@
 
 # CURE-NGS Panel Harmonization Framework
 
-> Annotation hotfix: this source branch prepares 0.2.6. Until its release
-> images are published, build `docker/Dockerfile` locally; do not assume the
-> `0.2.6` registry tags already exist. The 0.2.5 full image fails real VEP
-> annotation due to deprecated `--af_esp`; its old core/frozen-output tutorial
-> is not evidence of successful human-cache annotation.
+> Version 0.2.6 corrects the real VEP annotation failures caused by deprecated
+> `--af_esp` in the 0.2.5 full image. Its old core/frozen-output tutorial was
+> not evidence of successful human-cache annotation. Publication is gated on
+> executable tests and anonymous public installation; consult the
+> [release page](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases)
+> for published availability. If publication is still in progress, build
+> `docker/Dockerfile` from this source instead of assuming a registry tag exists.
 > [Corrections and verification scope](docs/ANNOTATION_HOTFIX.md).
 
 This repository is the publication-facing and executable software repository for
@@ -25,7 +27,7 @@ Panel-Based NGS in Precision Oncology."
 
 It provides one stable project home page for:
 
-- the `cure-ngs-harmonizer` 0.2.6 hotfix candidate (publication pending)
+- the version-pinned `cure-ngs-harmonizer` 0.2.6 command-line package
 - digest- and version-pinned core and full Docker images
 - synthetic fixtures, automated tests, and continuous integration
 - aggregate technical-validation results and their figure-generation script
@@ -53,7 +55,7 @@ environments.
 
 | Repository | Responsibility in CURE-NGS | Supported unified entry point | Latest audited component release |
 | --- | --- | --- | --- |
-| **[cure-ngs-panel-harmonization-framework](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework)** | Canonical project home, unified CLI, Docker/OCI images, tests, reviewer data, validation, and manuscript metadata | `cure-ngs` / `scripts/run_reviewer_demo.sh` | Hotfix candidate `0.2.6` (not yet published) |
+| **[cure-ngs-panel-harmonization-framework](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework)** | Canonical project home, unified CLI, Docker/OCI images, tests, reviewer data, validation, and manuscript metadata | `cure-ngs` / `scripts/run_reviewer_demo.sh` | Consolidated version `0.2.6` |
 | [panel_VCF_vcf2maf_pipeline](https://github.com/NCDCbioinformatics/panel_VCF_vcf2maf_pipeline) | VCF sanitation, assembly handling, and VCF-to-MAF conversion | `cure-ngs normalize-vcf` and `cure-ngs vcf-to-maf` | `NCDC_batch_vcf2maf_V.1.3.3_github` |
 | [HGVS_to_minimal_MAF_pipeline](https://github.com/NCDCbioinformatics/HGVS_to_minimal_MAF_pipeline) | Structured/report-derived HGVS to minimal MAF | `cure-ngs hgvs-table-to-minimal-maf` | `minimal_maf_vep_hg38tohg19_V.1.0.3` |
 | [minimal_MAF_to_annotated_MAF_pipeline](https://github.com/NCDCbioinformatics/minimal_MAF_to_annotated_MAF_pipeline) | Minimal MAF conversion and re-annotation | `cure-ngs minimal-maf-to-vcf` and `cure-ngs annotate-vcf` | `minimal_maf_to_vep_maf_V.1.0.2` |
@@ -355,8 +357,8 @@ python -m pip install --no-deps --editable .
 python -m pytest --cov=cure_ngs --cov-fail-under=70
 ```
 
-The 7 October 2026 Linux verification passes 133 tests with bcftools available
-and reports 77.61% combined statement and branch coverage, exceeding the
+The 7 October 2026 Linux verification passes 142 tests with bcftools available
+and reports 78.33% combined statement and branch coverage, exceeding the
 required 70% floor. Real-tool checks can skip on a host without the corresponding
 executables; image execution is verified separately. The Linux container job
 separately runs the complete beginner six-component walkthrough under hardened

@@ -27,6 +27,9 @@ cure-ngs = "cure_ngs.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+cure_ngs = ["data/contig_synonyms/*.txt"]
+
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
 testpaths = ["tests"]

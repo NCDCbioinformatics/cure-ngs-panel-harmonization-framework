@@ -19,7 +19,7 @@ from pathlib import Path
 from threading import Lock
 from typing import BinaryIO, Iterable, TextIO
 
-from .annotation import AnnotationRun, annotate_vcf
+from .annotation import AnnotationRun, annotate_vcf, annotation_outputs
 from .fasta import FastaReference
 from .liftover import LiftoverRun, liftover_vcf
 from .models import Assembly, AssemblyUndeterminedError, VcfInspection
@@ -799,8 +799,8 @@ def _annotate_with_reference_fallback(
                 {
                     "stage": "reference_fallback",
                     "candidate": candidate.label,
-                    "status": "SUCCESS",
-                    "detail": f"{len(normalization.commands)} normalization commands",
+                    "status": annotation.status,
+                    "detail": f"{len(normalization.commands)} normalization commands; {annotation.excluded_contig_records} cache-unsupported records preserved separately",
                 }
             )
             return candidate, annotation, normalized
@@ -1064,7 +1064,7 @@ def _process_one(
             manifest,
             command=["cure-ngs", "batch-vcf-to-maf"],
             inputs=manifest_inputs,
-            outputs={"annotated_maf": output_maf},
+            outputs=annotation_outputs(output_maf, annotation.to_dict() if annotation else {}),
             parameters={
                 "status": status,
                 "source_assembly": detected.value,
@@ -1095,7 +1095,8 @@ def _process_one(
             str(output_maf.resolve()),
             str(manifest.resolve()),
             status,
-            "completed",
+            (f"completed; {annotation.excluded_contig_records} cache-unsupported records preserved in a separate VCF"
+             if annotation and annotation.excluded_contig_records else "completed"),
             sample_tag,
             detected.value,
             target_assembly.value,
@@ -1180,10 +1181,14 @@ def _write_v133_log(path: Path, items: Iterable[BatchItemResult]) -> None:
             success = item.status != "FAILED"
             if item.status == "NO_SUPPORTED_SMALL_VARIANTS":
                 message = "No small-variant annotation performed; symbolic SV/breakends retained separately"
+            elif item.status == "NO_CACHE_SUPPORTED_VARIANTS":
+                message = "No VEP annotation performed; cache-unsupported contigs retained in a separate VCF"
             elif valid_empty:
                 message = "VCF has no variants; created empty MAF header"
             elif success and item.chosen_reference:
                 message = f"vcf2maf completed with ref={item.chosen_reference}"
+                if item.message != "completed":
+                    message += f"; {item.message}"
             else:
                 message = item.message
             writer.writerow(
@@ -1194,7 +1199,7 @@ def _write_v133_log(path: Path, items: Iterable[BatchItemResult]) -> None:
                     "ref_info": _v133_ref_info(item),
                     "is_gvcf": int(item.is_gvcf),
                     "has_normal": int(item.has_normal),
-                    "status": ("NO_SUPPORTED_SMALL_VARIANTS" if item.status == "NO_SUPPORTED_SMALL_VARIANTS"
+                    "status": (item.status if item.status in {"NO_SUPPORTED_SMALL_VARIANTS", "NO_CACHE_SUPPORTED_VARIANTS"}
                                else "SUCCESS" if success else "FAILED"),
                     "message": message,
                     "final_vcf": item.final_vcf or item.input_path,

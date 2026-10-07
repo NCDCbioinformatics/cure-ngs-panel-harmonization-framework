@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .annotation import annotate_vcf
+from .annotation import annotate_vcf, annotation_outputs
 from .batch import batch_vcf_to_maf, prepare_v133_workspace
 from .concordance import compare_maf_routes
 from .fusion import normalize_fusion
@@ -843,7 +843,7 @@ def main(argv: list[str] | None = None) -> int:
                     "vcf": args.input,
                     "reference_fasta": args.reference_fasta,
                 },
-                outputs={"annotated_maf": args.output},
+                outputs=annotation_outputs(args.output, result.to_dict()),
                 parameters=result.to_dict(),
                 tools={
                     "vcf2maf_sha256": result.vcf2maf_sha256,
@@ -890,7 +890,7 @@ def main(argv: list[str] | None = None) -> int:
                 manifest,
                 command=["cure-ngs", *(argv or sys.argv[1:])],
                 inputs=manifest_inputs,
-                outputs={"annotated_maf": args.output},
+                outputs=annotation_outputs(args.output, result.annotation),
                 parameters=result.to_dict(),
                 tools={
                     "vcf2maf_sha256": str(

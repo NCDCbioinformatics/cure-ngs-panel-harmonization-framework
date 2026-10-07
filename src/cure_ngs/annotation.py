@@ -11,6 +11,7 @@ from functools import lru_cache
 from uuid import uuid4
 
 from .models import Assembly, InspectionStatus
+from .contig_synonyms import partition_cache_contigs, write_default_vep_config
 from .provenance import sha256_file
 from .vcf import inspect_vcf
 
@@ -51,9 +52,22 @@ class AnnotationRun:
     vcf_normal_id: str | None
     cache_version: int
     vcf2maf_sha256: str
+    annotation_input_records: int | None = None
+    excluded_contig_records: int = 0
+    excluded_contigs_vcf: str | None = None
+    contig_exclusion_audit: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
+
+
+def annotation_outputs(output_maf: str | Path, annotation: dict[str, object]) -> dict[str, str | Path]:
+    """Include preserved records and accounting in hash-verified manifests."""
+    outputs: dict[str, str | Path] = {"annotated_maf": output_maf}
+    for key in ("excluded_contigs_vcf", "contig_exclusion_audit"):
+        if annotation.get(key):
+            outputs[key] = str(annotation[key])
+    return outputs
 
 
 def inspect_maf(path: str | Path) -> tuple[tuple[str, ...], int]:
@@ -187,11 +201,28 @@ def annotate_vcf(
     # direct annotate-vcf calls and reruns with the same explicit temporary dir.
     tmp_path = tmp_root / f"run-{uuid4().hex}"
     tmp_path.mkdir(parents=True, exist_ok=True)
+    annotation_input = input_path
+    annotation_input_records = inspection.record_count
+    excluded_contig_records = 0
+    excluded_contigs_vcf = contig_exclusion_audit = None
+    # An explicit custom VEP configuration is passed unchanged. Its annotation
+    # sources may not be cache directories, so do not apply the default policy.
+    if vep_config is None:
+        vep_config = write_default_vep_config(tmp_path, assembly)
+        partition = partition_cache_contigs(input_path, tmp_path,
+            vep_data / "homo_sapiens" / f"{cache_version}_{assembly.value}", assembly)
+        annotation_input = partition.annotation_vcf
+        annotation_input_records = partition.eligible_records
+        excluded_contig_records = partition.excluded_records
+        excluded_contigs_vcf = str(partition.excluded_vcf) if partition.excluded_vcf else None
+        contig_exclusion_audit = str(partition.audit)
+        if annotation_input_records + excluded_contig_records != inspection.record_count:
+            raise ValueError("VCF contig partition failed record accounting")
     command = [
         "perl",
         str(vcf2maf_path),
         "--input-vcf",
-        str(input_path),
+        str(annotation_input),
         "--output-maf",
         str(tmp_path / "annotated.maf"),
         "--tumor-id",
@@ -229,22 +260,29 @@ def annotate_vcf(
             ]
         )
 
-    completed = subprocess.run(
-        command,
-        check=False,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    if stdout_log is not None:
-        stdout_path = Path(stdout_log)
-        stdout_path.parent.mkdir(parents=True, exist_ok=True)
-        stdout_path.write_text(completed.stdout or "", encoding="utf-8")
-    if stderr_log is not None:
-        stderr_path = Path(stderr_log)
-        stderr_path.parent.mkdir(parents=True, exist_ok=True)
-        stderr_path.write_text(completed.stderr or "", encoding="utf-8")
+    no_cache_supported = annotation_input_records == 0 and excluded_contig_records > 0
+    staged_maf = tmp_path / "annotated.maf"
+    if no_cache_supported:
+        # Not an annotation success and not a genuinely empty input. Preserve
+        # every excluded allele in the sidecar without inventing gene labels.
+        staged_maf.write_text("# No variants annotated: see excluded-no-cache-contigs.vcf\n"
+            "NCBI_Build\tChromosome\tStart_Position\tReference_Allele\tTumor_Seq_Allele2\tTumor_Sample_Barcode\n", encoding="utf-8")
+        completed = subprocess.CompletedProcess(command, 0, "", "No cache-supported variants; no VEP annotation performed\n")
+    else:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    stdout_path = Path(stdout_log or tmp_path / "vcf2maf.stdout.log")
+    stdout_path.parent.mkdir(parents=True, exist_ok=True)
+    stdout_path.write_text(completed.stdout or "", encoding="utf-8")
+    stderr_path = Path(stderr_log or tmp_path / "vcf2maf.stderr.log")
+    stderr_path.parent.mkdir(parents=True, exist_ok=True)
+    stderr_path.write_text(completed.stderr or "", encoding="utf-8")
     if completed.returncode != 0:
         raise subprocess.CalledProcessError(
             completed.returncode,
@@ -252,11 +290,12 @@ def annotate_vcf(
             output=completed.stdout,
             stderr=completed.stderr,
         )
-    staged_maf = tmp_path / "annotated.maf"
     header, output_rows = inspect_maf(staged_maf)
-    if inspection.record_count > 0 and output_rows == 0:
+    if output_rows != annotation_input_records:
         raise ValueError(
-            "Annotation produced zero MAF rows from a non-empty VCF"
+            f"Annotation record accounting failed: expected {annotation_input_records} MAF rows, "
+            f"observed {output_rows}; {excluded_contig_records} records explicitly preserved separately. "
+            f"No output published. Inspect VEP warnings and contig/cache compatibility: {stderr_path}"
         )
     build_index = header.index("NCBI_Build")
     if output_rows:
@@ -284,11 +323,11 @@ def annotate_vcf(
     publish_path.replace(output_path)
 
     return AnnotationRun(
-        command=tuple(command),
+        command=() if no_cache_supported else tuple(command),
         status=(
-            InspectionStatus.VALID_EMPTY.value
-            if inspection.record_count == 0
-            else "SUCCESS"
+            "NO_CACHE_SUPPORTED_VARIANTS" if no_cache_supported else (
+                InspectionStatus.VALID_EMPTY.value if inspection.record_count == 0 else "SUCCESS"
+            )
         ),
         input_records=inspection.record_count,
         output_rows=output_rows,
@@ -299,5 +338,9 @@ def annotate_vcf(
         vcf_normal_id=resolved_vcf_normal,
         cache_version=cache_version,
         vcf2maf_sha256=sha256_file(vcf2maf_path),
+        annotation_input_records=annotation_input_records,
+        excluded_contig_records=excluded_contig_records,
+        excluded_contigs_vcf=excluded_contigs_vcf,
+        contig_exclusion_audit=contig_exclusion_audit,
     )
 

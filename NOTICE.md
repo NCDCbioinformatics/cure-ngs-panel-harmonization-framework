@@ -23,5 +23,10 @@ Specific redistributed material:
 - `examples/synthetic/` and `tests/fixtures/synthetic/` are original artificial
   software fixtures. They contain no CURE-NGS patient data and are not human
   reference datasets.
+- `src/cure_ngs/data/contig_synonyms/` contains official NCBI GRCh37.p13 and
+  GRCh38.p14 assembly reports with LF-normalized line endings. The directory
+  README records source URLs and the code verifies pinned SHA-256 digests.
+  These are reference sequence-name metadata, not original project code
+  or clinical data; the project MIT license does not replace source terms.
 
 This notice is included to reduce ambiguity for manuscript review and public reuse.

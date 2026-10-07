@@ -19,6 +19,7 @@ annotation are separate checks; none substitutes for the others.
 | SV/breakend-only input mistaken for a successful small-variant MAF | Preserve excluded records in a VCF sidecar, emit `NO_SUPPORTED_SMALL_VARIANTS`, and do not run VEP or label the file as successfully annotated. A mixed SV/small-variant input retains supported sequence-resolved records. |
 | Windows checkout changes reference offsets/cache hashes | Enforce LF on indexed FASTA and hashed JSON fixtures in Git attributes. Export fixture content without metadata operations that Windows/WSL bind mounts can reject. |
 | Older cache paired with VEP 116 | Verify executable/cache major version and cache species/assembly before annotation. Do not rename cache 102/106 to 116. |
+| Non-primary contigs silently missing from MAF | Add checksum-pinned official NCBI sequence aliases for default VEP lookup. Preserve known non-primary contigs lacking a cache feature directory in `excluded-no-cache-contigs.vcf` and exclude them from MAF, with a JSON reason/count audit and manifest SHA-256. Primary/unknown names are not silently excluded. Exact eligible-input/MAF row accounting is required before atomic publication. An explicit custom VEP configuration remains unchanged. |
 
 Upstream change notes:
 https://github.com/mskcc/vcf2maf/releases/tag/v1.6.22
@@ -27,10 +28,10 @@ The new MAF schema uses `gnomADe_*` columns. Historical frozen expected MAFs
 with `gnomAD_*` columns are retained as historical outputs, not silently
 relabeled as newly generated annotations.
 
-## Local verification scope, 2026-10-01
+## Local verification scope, 2026-10-07
 
 - All six latest component Release locks were checked against GitHub.
-- Linux unit/integration suite: 133 passed; branch-aware coverage 77.61%.
+- Linux unit/integration suite: 142 passed; branch-aware coverage 78.33%.
 - Image-contained `self-test`: full and core PASS in the independent clean
   Ubuntu as UID/GID 1000, with only an output mount, read-only image, and no
   network. Full mode runs actual synthetic Picard/VEP/vcf2maf; no source or
@@ -49,8 +50,10 @@ relabeled as newly generated annotations.
 - Supplied VCF preprocessing: 25 inputs, 21 sequence-resolved routes passed;
   four SV-only inputs retained separately. Real bcftools REF validation,
   left alignment, splitting, duplicate removal, and Picard liftover were run.
-- Full supplied-data VEP116/GRCh37 annotation: **pending the official human
-  cache download and subsequent run**. Preprocessing PASS is not annotation PASS.
+- Full supplied-data VEP116/GRCh37 annotation: the official cache download
+  passed checksum and gzip integrity checks. A strict accounting audit
+  found non-primary-contig omissions, and a corrected run is required
+  before publication. Preprocessing PASS is not annotation PASS.
 
 Clinical inputs, identifiers, local paths, per-variant results, and private
 logs are not published. Aggregate summaries can be reported without the data.

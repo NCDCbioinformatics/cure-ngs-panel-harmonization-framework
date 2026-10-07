@@ -1,9 +1,14 @@
 name: Create GitHub Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  # Automatic releases are gated by publish-container.yml after both images
+  # execute and anonymous installation passes. This is a gated manual retry.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to release
+        required: true
+        default: v0.2.6
 
 permissions:
   contents: write
@@ -12,12 +17,25 @@ jobs:
   release:
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ inputs.tag }}
+      - name: Verify the selected public distribution
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$RELEASE_TAG" == "v0.2.6" ]]
+          export DOCKER_CONFIG="$(mktemp -d)"
+          CURE_NGS_VERSION="${RELEASE_TAG#v}" bash scripts/verify_public_install.sh
       - name: Publish release for the immutable tag
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: >-
-          gh release create "${GITHUB_REF_NAME}"
-          --verify-tag
-          --title "CURE-NGS ${GITHUB_REF_NAME}"
-          --generate-notes
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          test -s docs/RELEASE_NOTES_0.2.6.md
+          bash scripts/render_release_notes.sh "$RELEASE_TAG" \
+            docs/RELEASE_NOTES_0.2.6.md > release-notes.md
+          gh release create "$RELEASE_TAG" --verify-tag \
+            --title "CURE-NGS $RELEASE_TAG" \
+            --notes-file release-notes.md
