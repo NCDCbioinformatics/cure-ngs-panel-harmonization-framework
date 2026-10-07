@@ -40,5 +40,26 @@
     "excluded_vcf_and_accounting_audit_hashes": "PASS",
     "inhibit_vep_or_precomputed_annotation_copy_used": false
   },
+  "public_distribution_verification": {
+    "date": "2026-10-07",
+    "release_source_revision": "33dc1e7360cb8a3ebcb972628bac8beed2687148",
+    "release_code_identical_to_tested_software_source_revision": true,
+    "full_image_manifest_digest": "sha256:41fb1201379777de923bf4e8af41fed1630b3f2939d098bba9301028801e8b61",
+    "core_image_manifest_digest": "sha256:02c335b4af071e573e8c0559f2946d727be3edf42ca9953c47924153499a238d",
+    "anonymous_pull_using_new_empty_docker_config": "PASS_FULL_AND_CORE",
+    "published_image_install_self_test_and_six_component_tutorial": "PASS",
+    "published_core_image_contained_self_test_output_mount_only": "PASS",
+    "published_image_real_synthetic_annotation_regressions": "PASS",
+    "published_image_section13_real_human_annotation": "PASS_25_NEW_MAF_ROWS",
+    "published_image_rcrs_compatible_mitochondrial_annotation": "PASS_1_NEW_MAF_ROW_NO_EXCLUSION",
+    "published_image_supplied_25_files_jobs_1_and_4": "PASS_21_NONEMPTY_MAFS_16286_ROWS_PER_RUN_4_SV_ONLY_FILES_4_EXCLUDED_VARIANTS",
+    "published_image_serial_parallel_all_maf_columns": "PASS_EXACT",
+    "published_image_serial_parallel_preserved_vcf_records": "PASS_EXACT",
+    "local_vs_published_image_all_maf_columns": "PASS_EXACT",
+    "original_input_sha256_unchanged_rechecked_after_public_runs": 25,
+    "published_full_image_export_load_second_daemon_self_test": "PASS",
+    "portable_full_image_archive_bytes": 468492800,
+    "portable_full_image_archive_sha256": "17de0e53868bc84901c1b280ff02fb82929b9352dde9e449f9ee7fea72102b05"
+  },
   "clinical_inputs_identifiers_per_variant_results_or_private_logs_published": false
 }

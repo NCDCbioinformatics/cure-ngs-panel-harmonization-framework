@@ -26,6 +26,53 @@ gates. Public availability is announced on the release page only after both
 images publish and anonymous installation passes; local builds alone do not
 establish anonymous registry availability.
 
+## Published 0.2.6 image verification, 2026-10-07
+
+[Release v0.2.6](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases/tag/v0.2.6)
+was created after the [image publication and anonymous-install release gate](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/actions/runs/37556396608)
+passed. In the independent Ubuntu installation described above, a new empty
+`DOCKER_CONFIG` was then used to pull both published images without GHCR login.
+Both images identify source commit
+`33dc1e7360cb8a3ebcb972628bac8beed2687148`; its software code is identical to
+the tested software revision in the aggregate record. Post-release documentation
+updates do not change or move this immutable release tag.
+
+| Published image | Verified OCI manifest digest |
+| --- | --- |
+| `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6` | `sha256:41fb1201379777de923bf4e8af41fed1630b3f2939d098bba9301028801e8b61` |
+| `ghcr.io/ncdcbioinformatics/cure-ngs-harmonizer:0.2.6-core` | `sha256:02c335b4af071e573e8c0559f2946d727be3edf42ca9953c47924153499a238d` |
+
+The downloaded images passed the executable public-install script, the
+six-component beginner tutorial, image-contained tests, and actual synthetic
+VEP/Picard/vcf2maf regressions. Section 13 was repeated with the real official
+human cache and produced 25 new MAF rows on the local output bind mount.
+A separate synthetic mitochondrial variant against an NC_012920.1-compatible
+reference produced one MAF row without exclusion: the compatibility safeguard
+does not reject all mitochondrial variants.
+
+The published full image also repeated the supplied 25-file analysis at
+`--jobs 4` and `--jobs 1`, with zero failed files in both runs: 21 non-empty
+small-variant MAFs and 16,286 rows per run. The four SV-only files retained
+their explicit `NO_SUPPORTED_SMALL_VARIANTS` status and separate preserved
+VCFs; their header-only MAFs are not counted as successful annotation.
+The four separately excluded alleles had the same explicit reasons reported
+above. Every MAF column value and every preserved VCF record agreed between
+serial and parallel runs, and between the pre-publication local image and
+the published image. All 25 original input hashes were rechecked unchanged
+after the public-image runs. This verifies execution and determinism, not
+independent biological truth or clinical accuracy.
+
+The published full image was additionally exported, SHA-256 verified, loaded
+into a second Docker daemon in another Ubuntu installation, and passed its
+image-contained full self-test without source/reference mounts. The portable
+archive was 468,492,800 bytes with SHA-256
+`17de0e53868bc84901c1b280ff02fb82929b9352dde9e449f9ee7fea72102b05`.
+This is an image-transfer check, not a claim that the second installation
+was initially blank. Clinical inputs, identifiers, per-variant results and
+private logs are not public artifacts; only the
+[aggregate verification record](../validation/cure_ngs_0.2.6_verification.json)
+is published.
+
 ## Historical 0.2.5 pull-only record
 
 > Historical scope correction (2026-10-01): the 0.2.5 record below verified

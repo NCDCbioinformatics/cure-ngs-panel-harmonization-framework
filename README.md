@@ -14,11 +14,10 @@
 
 > Version 0.2.6 corrects the real VEP annotation failures caused by deprecated
 > `--af_esp` in the 0.2.5 full image. Its old core/frozen-output tutorial was
-> not evidence of successful human-cache annotation. Publication is gated on
-> executable tests and anonymous public installation; consult the
-> [release page](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases)
-> for published availability. If publication is still in progress, build
-> `docker/Dockerfile` from this source instead of assuming a registry tag exists.
+> not evidence of successful human-cache annotation. Both corrected images and
+> [release v0.2.6](https://github.com/NCDCbioinformatics/cure-ngs-panel-harmonization-framework/releases/tag/v0.2.6)
+> are public. The downloaded images passed anonymous installation, executable
+> tutorials, and real annotation checks in an independent Ubuntu installation.
 > [Corrections and verification scope](docs/ANNOTATION_HOTFIX.md).
 
 This repository is the publication-facing and executable software repository for
